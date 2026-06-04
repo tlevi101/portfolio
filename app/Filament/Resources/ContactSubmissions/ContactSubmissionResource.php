@@ -8,6 +8,7 @@ use App\Filament\Resources\ContactSubmissions\Schemas\ContactSubmissionForm;
 use App\Filament\Resources\ContactSubmissions\Tables\ContactSubmissionsTable;
 use App\Models\ContactSubmission;
 use BackedEnum;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -24,6 +25,26 @@ class ContactSubmissionResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return ContactSubmissionForm::configure($schema);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                TextEntry::make('name'),
+                TextEntry::make('email')
+                    ->copyable(),
+                TextEntry::make('created_at')
+                    ->label('Received')
+                    ->dateTime(),
+                TextEntry::make('read_at')
+                    ->label('Read')
+                    ->dateTime()
+                    ->placeholder('Unread'),
+                TextEntry::make('message')
+                    ->columnSpanFull(),
+            ])
+            ->columns(2);
     }
 
     public static function table(Table $table): Table

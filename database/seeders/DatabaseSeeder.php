@@ -18,7 +18,7 @@ class DatabaseSeeder extends Seeder
     {
         User::factory()->create([
             'name' => 'Admin',
-            'email' => 'admin@portfolio.local',
+            'email' => 'admin@tensura101.com',
         ]);
 
         $this->call(PortfolioSeeder::class);
