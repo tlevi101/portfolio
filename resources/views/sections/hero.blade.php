@@ -17,7 +17,7 @@
                 <a class="button button-primary" href="#contact">Contact me</a>
                 <a class="button button-secondary" href="#projects">View projects</a>
                 @if ($profile->cv_path)
-                    <a class="button button-link" href="{{ Storage::url($profile->cv_path) }}" target="_blank" rel="noopener noreferrer">
+                    <a class="button button-link" href="{{ route('cv.download') }}" target="_blank" rel="noopener noreferrer">
                         Download CV
                     </a>
                 @endif

@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Profile;
+use App\Services\CvGeneratorService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
@@ -57,6 +58,8 @@ class ProfilePage extends Page implements HasForms
                                 TextInput::make('tagline')->required()->columnSpanFull(),
                                 TextInput::make('hero_eyebrow'),
                                 TextInput::make('location')->required(),
+                                        TextInput::make('phone'),
+                                TextInput::make('portfolio_url')->url(),
                                 Toggle::make('available'),
                                 TextInput::make('available_text')->placeholder('Open to work'),
                                 FileUpload::make('avatar_path')
@@ -94,10 +97,6 @@ class ProfilePage extends Page implements HasForms
                                 TextInput::make('email')->email()->required(),
                                 TextInput::make('linkedin_url')->url(),
                                 TextInput::make('github_url')->url(),
-                                FileUpload::make('cv_path')
-                                    ->acceptedFileTypes(['application/pdf'])
-                                    ->directory('cv')
-                                    ->columnSpanFull(),
                             ])
                             ->columns(2),
 
@@ -130,6 +129,29 @@ class ProfilePage extends Page implements HasForms
             Action::make('save')
                 ->label('Save changes')
                 ->submit('save'),
+        ];
+    }
+
+    public function regenerateCv(): void
+    {
+        app(CvGeneratorService::class)->generate();
+
+        Notification::make()
+            ->title('CV regenerated')
+            ->success()
+            ->send();
+    }
+
+    /**
+     * @return array<Action>
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('regenerateCv')
+                ->label('Regenerate CV')
+                ->icon(Heroicon::OutlinedArrowPath)
+                ->action('regenerateCv'),
         ];
     }
 

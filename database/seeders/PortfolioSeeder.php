@@ -4,9 +4,11 @@ namespace Database\Seeders;
 
 use App\Enums\ProjectType;
 use App\Enums\SkillGroup;
+use App\Models\Education;
 use App\Models\Profile;
 use App\Models\Project;
 use App\Models\Skill;
+use App\Models\WorkExperience;
 use Illuminate\Database\Seeder;
 
 class PortfolioSeeder extends Seeder
@@ -35,6 +37,8 @@ class PortfolioSeeder extends Seeder
             'contact_heading' => 'Open to hearing about good work.',
             'contact_intro' => 'If you have a role or project that fits, reach out directly.',
             'email' => 'leventetorma3@gmail.com',
+            'phone' => null,
+            'portfolio_url' => 'http://localhost:8080',
             'footer_text' => 'Torma Levente — Laravel + React full-stack developer',
         ]);
 
@@ -107,5 +111,43 @@ class PortfolioSeeder extends Seeder
                 ['sort_order' => $order]
             );
         }
+
+        WorkExperience::firstOrCreate(
+            ['company' => 'Current Company', 'title' => 'Full-Stack Developer'],
+            [
+                'period' => '2024 – Present',
+                'location' => 'Budapest, Hungary',
+                'bullets' => [
+                    'Built and maintained Laravel and React features for business-facing applications.',
+                    'Worked across backend logic, frontend delivery, and day-to-day product improvements.',
+                    'Improved existing systems with a focus on maintainability, usability, and practical delivery.',
+                ],
+                'sort_order' => 1,
+            ]
+        );
+
+        WorkExperience::firstOrCreate(
+            ['company' => 'Previous Company', 'title' => 'Developer'],
+            [
+                'period' => '2022 – 2024',
+                'location' => 'Budapest, Hungary',
+                'bullets' => [
+                    'Developed features in an existing production codebase across backend and frontend layers.',
+                    'Worked with APIs, data flows, and UI implementation in a collaborative team environment.',
+                    'Contributed bug fixes, performance improvements, and iterative product delivery.',
+                ],
+                'sort_order' => 2,
+            ]
+        );
+
+        Education::firstOrCreate(
+            ['school' => 'University / School Name'],
+            [
+                'degree' => 'Replace with your degree',
+                'graduation_year' => '2022',
+                'location' => 'Budapest, Hungary',
+                'sort_order' => 1,
+            ]
+        );
     }
 }

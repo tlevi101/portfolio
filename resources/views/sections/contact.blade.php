@@ -37,7 +37,7 @@
                 @if ($profile->cv_path)
                     <li>
                         <span class="label">CV</span>
-                        <a class="text-link" href="{{ Storage::url($profile->cv_path) }}" target="_blank" rel="noopener noreferrer">
+                        <a class="text-link" href="{{ route('cv.download') }}" target="_blank" rel="noopener noreferrer">
                             Download resume
                         </a>
                     </li>
