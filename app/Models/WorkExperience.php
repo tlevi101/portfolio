@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Observers\CvDependencyObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property array<int, string> $bullets
  */
+#[ObservedBy(CvDependencyObserver::class)]
 class WorkExperience extends Model
 {
     protected $fillable = [

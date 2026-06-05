@@ -3,11 +3,14 @@
 namespace App\Models;
 
 use App\Enums\SkillGroup;
+use App\Observers\CvDependencyObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property SkillGroup $group
  */
+#[ObservedBy(CvDependencyObserver::class)]
 class Skill extends Model
 {
     protected $fillable = [

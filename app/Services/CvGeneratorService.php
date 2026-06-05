@@ -37,16 +37,13 @@ class CvGeneratorService
             ->orderBy('sort_order')
             ->get();
 
-        $qr = null;
-        if ($profile->portfolio_url) {
-            $options = new QROptions([
-                'outputType' => QROutputInterface::GDIMAGE_PNG,
-                'outputBase64' => true,
-                'scale' => 6,
-                'imageTransparent' => false,
-            ]);
-            $qr = (new QRCode($options))->render($profile->portfolio_url);
-        }
+        $options = new QROptions([
+            'outputType' => QROutputInterface::GDIMAGE_PNG,
+            'outputBase64' => true,
+            'scale' => 6,
+            'imageTransparent' => false,
+        ]);
+        $qr = (new QRCode($options))->render($profile->portfolio_url ?: url('/'));
 
         $avatar = null;
         if ($profile->avatar_path && Storage::disk('public')->exists($profile->avatar_path)) {
@@ -76,7 +73,7 @@ class CvGeneratorService
 
         Storage::disk('public')->put('cv/cv.pdf', $pdf->output());
 
-        $profile->update(['cv_path' => 'cv/cv.pdf']);
+        $profile->updateQuietly(['cv_path' => 'cv/cv.pdf']);
 
         return 'cv/cv.pdf';
     }

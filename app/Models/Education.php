@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use App\Observers\CvDependencyObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 
+#[ObservedBy(CvDependencyObserver::class)]
 class Education extends Model
 {
     protected $fillable = [

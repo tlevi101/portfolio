@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Observers\CvDependencyObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -23,6 +25,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $cv_path
  * @property string|null $footer_text
  */
+#[ObservedBy(CvDependencyObserver::class)]
 class Profile extends Model
 {
     protected $table = 'profile';

@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Profile;
 use App\Services\CvGeneratorService;
+use App\Services\ImageOptimizer;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
@@ -20,6 +21,9 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 /**
  * @property Schema $form
@@ -66,6 +70,13 @@ class ProfilePage extends Page implements HasForms
                                     ->image()
                                     ->disk('public')
                                     ->directory('profile')
+                                    ->saveUploadedFileUsing(function (TemporaryUploadedFile $file): string {
+                                        $optimized = app(ImageOptimizer::class)->optimizeToJpeg($file->get());
+                                        $path = 'profile/'.Str::ulid()->toString().'.jpg';
+                                        Storage::disk('public')->put($path, $optimized);
+
+                                        return $path;
+                                    })
                                     ->columnSpanFull(),
                             ])
                             ->columns(2),
