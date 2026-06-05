@@ -1,7 +1,7 @@
 <section class="section" id="experiments">
     <div class="container">
         <div class="section-head reveal">
-            <span class="eyebrow">Side projects</span>
+            <span class="eyebrow">{{ __('Side projects') }}</span>
             @if ($profile->experiments_heading ?? false)
                 <h2 class="section-title">{{ $profile->experiments_heading }}</h2>
             @endif
@@ -26,7 +26,7 @@
                     </ul>
                     @if ($project->url)
                         <a class="text-link" href="{{ $project->url }}" target="_blank" rel="noopener noreferrer" style="display: block; margin-top: var(--space-4);">
-                            View ↗
+                            {{ __('View ↗') }}
                         </a>
                     @endif
                 </article>

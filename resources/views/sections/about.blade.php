@@ -1,7 +1,7 @@
 <section class="section" id="about">
     <div class="container about-grid">
         <article class="card reveal">
-            <span class="eyebrow">About</span>
+            <span class="eyebrow">{{ __('About') }}</span>
             @if ($profile->about_heading ?? false)
                 <h2 style="font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3.4rem); letter-spacing: -0.03em; text-wrap: balance; margin-top: var(--space-3);">
                     {{ $profile->about_heading }}
@@ -11,7 +11,7 @@
         </article>
 
         <article class="card reveal">
-            <span class="eyebrow">Skills &amp; stack</span>
+            <span class="eyebrow">{{ __('Skills & stack') }}</span>
             <div class="definition-list" style="margin-top: var(--space-5);">
                 @foreach ($skills as $groupValue => $groupSkills)
                     <div>

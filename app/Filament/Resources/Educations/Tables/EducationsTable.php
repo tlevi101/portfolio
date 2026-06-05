@@ -14,10 +14,10 @@ class EducationsTable
     {
         return $table
             ->columns([
-                TextColumn::make('sort_order')->label('Order')->sortable(),
-                TextColumn::make('school')->searchable()->sortable(),
-                TextColumn::make('degree'),
-                TextColumn::make('graduation_year'),
+                TextColumn::make('sort_order')->label(__('Order'))->sortable(),
+                TextColumn::make('school')->label(__('School'))->searchable()->sortable(),
+                TextColumn::make('degree')->label(__('Degree')),
+                TextColumn::make('graduation_year')->label(__('Graduation year')),
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order')

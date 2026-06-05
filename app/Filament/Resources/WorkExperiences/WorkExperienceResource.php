@@ -20,9 +20,22 @@ class WorkExperienceResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBriefcase;
 
-    protected static ?string $navigationLabel = 'Work Experience';
-
     protected static ?int $navigationSort = 3;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Work Experience');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('work experience');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('work experiences');
+    }
 
     public static function form(Schema $schema): Schema
     {

@@ -1,7 +1,7 @@
 <section class="section" id="contact">
     <div class="container contact-grid">
         <article class="card reveal">
-            <span class="eyebrow">Contact</span>
+            <span class="eyebrow">{{ __('Contact') }}</span>
             @if ($profile->contact_heading ?? false)
                 <h2 style="font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3.4rem); letter-spacing: -0.03em; text-wrap: balance; margin-top: var(--space-3);">
                     {{ $profile->contact_heading }}
@@ -15,7 +15,7 @@
 
             <ul class="contact-list" style="margin-top: var(--space-6);">
                 <li>
-                    <span class="label">Email</span>
+                    <span class="label">{{ __('Email') }}</span>
                     <a class="text-link" href="mailto:{{ $profile->email }}">{{ $profile->email }}</a>
                 </li>
                 @if ($profile->linkedin_url)
@@ -38,7 +38,7 @@
                     <li>
                         <span class="label">CV</span>
                         <a class="text-link" href="{{ route('cv.download') }}" target="_blank" rel="noopener noreferrer">
-                            Download resume
+                            {{ __('Download resume') }}
                         </a>
                     </li>
                 @endif
@@ -46,7 +46,7 @@
         </article>
 
         <article class="card reveal">
-            <span class="eyebrow">Send a message</span>
+            <span class="eyebrow">{{ __('Send a message') }}</span>
             <div style="margin-top: var(--space-5);">
                 <livewire:contact-form />
             </div>

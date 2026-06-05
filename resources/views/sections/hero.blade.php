@@ -18,19 +18,19 @@
             </p>
 
             <div class="mt-7 flex flex-wrap items-center gap-3">
-                <a class="button button-primary" href="#contact">Contact me</a>
-                <a class="button button-secondary" href="#projects">View projects</a>
+                <a class="button button-primary" href="#contact">{{ __('Contact me') }}</a>
+                <a class="button button-secondary" href="#projects">{{ __('View projects') }}</a>
                 @if ($profile->cv_path)
                     <a class="button button-link" href="{{ route('cv.download') }}" target="_blank" rel="noopener noreferrer">
-                        Download CV
+                        {{ __('Download CV') }}
                     </a>
                 @endif
             </div>
         </div>
 
-        <aside class="reveal mx-auto w-full max-w-[17rem] md:mx-0 md:justify-self-end" aria-label="Profile summary">
+        <aside class="reveal mx-auto w-full max-w-[17rem] md:mx-0 md:justify-self-end" aria-label="{{ __('Profile summary') }}">
             <div class="portrait-block">
-                <div class="portrait" role="img" aria-label="Profile photo of {{ $profile->full_name }}">
+                <div class="portrait" role="img" aria-label="{{ __('Profile photo of :name', ['name' => $profile->full_name]) }}">
                     @if ($profile->avatar_path)
                         <img src="{{ Storage::url($profile->avatar_path) }}" alt="{{ $profile->full_name }}" />
                     @endif

@@ -20,9 +20,22 @@ class EducationResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAcademicCap;
 
-    protected static ?string $navigationLabel = 'Education';
-
     protected static ?int $navigationSort = 4;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Education');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('education entry');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('education entries');
+    }
 
     public static function form(Schema $schema): Schema
     {

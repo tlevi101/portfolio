@@ -14,10 +14,10 @@ class WorkExperiencesTable
     {
         return $table
             ->columns([
-                TextColumn::make('sort_order')->label('Order')->sortable(),
-                TextColumn::make('company')->searchable()->sortable(),
-                TextColumn::make('title')->searchable(),
-                TextColumn::make('period'),
+                TextColumn::make('sort_order')->label(__('Order'))->sortable(),
+                TextColumn::make('company')->label(__('Company'))->searchable()->sortable(),
+                TextColumn::make('title')->label(__('Job title'))->searchable(),
+                TextColumn::make('period')->label(__('Period')),
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order')

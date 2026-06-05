@@ -12,13 +12,13 @@ class EducationForm
     {
         return $schema
             ->components([
-                Section::make('Institution')
+                Section::make(__('Institution'))
                     ->schema([
-                        TextInput::make('school')->required()->columnSpanFull(),
-                        TextInput::make('degree'),
-                        TextInput::make('graduation_year')->placeholder('2022'),
-                        TextInput::make('location')->placeholder('Budapest, Hungary'),
-                        TextInput::make('sort_order')->numeric()->default(0),
+                        TextInput::make('school')->label(__('School'))->required()->columnSpanFull(),
+                        TextInput::make('degree')->label(__('Degree')),
+                        TextInput::make('graduation_year')->label(__('Graduation year'))->placeholder('2022'),
+                        TextInput::make('location')->label(__('Location'))->placeholder(__('Budapest, Hungary')),
+                        TextInput::make('sort_order')->label(__('Sort order'))->numeric()->default(0),
                     ])
                     ->columns(2),
             ]);

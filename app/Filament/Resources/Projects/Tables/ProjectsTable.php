@@ -17,15 +17,17 @@ class ProjectsTable
     {
         return $table
             ->columns([
-                TextColumn::make('title')->searchable()->sortable(),
+                TextColumn::make('title')->label(__('Title'))->searchable()->sortable(),
                 TextColumn::make('type')
+                    ->label(__('Type'))
                     ->badge()
                     ->formatStateUsing(fn (ProjectType $state): string => $state->label()),
-                IconColumn::make('featured')->boolean(),
-                TextColumn::make('sort_order')->sortable(),
+                IconColumn::make('featured')->label(__('Featured'))->boolean(),
+                TextColumn::make('sort_order')->label(__('Sort order'))->sortable(),
             ])
             ->filters([
                 SelectFilter::make('type')
+                    ->label(__('Type'))
                     ->options(collect(ProjectType::cases())->mapWithKeys(
                         fn (ProjectType $type): array => [$type->value => $type->label()]
                     )),

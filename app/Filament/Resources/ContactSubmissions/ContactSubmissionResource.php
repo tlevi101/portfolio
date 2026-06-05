@@ -20,7 +20,20 @@ class ContactSubmissionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedEnvelope;
 
-    protected static ?string $navigationLabel = 'Contact Submissions';
+    public static function getNavigationLabel(): string
+    {
+        return __('Contact Submissions');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('contact submission');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('contact submissions');
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -31,17 +44,19 @@ class ContactSubmissionResource extends Resource
     {
         return $schema
             ->components([
-                TextEntry::make('name'),
+                TextEntry::make('name')->label(__('Name')),
                 TextEntry::make('email')
+                    ->label(__('Email'))
                     ->copyable(),
                 TextEntry::make('created_at')
-                    ->label('Received')
+                    ->label(__('Received'))
                     ->dateTime(),
                 TextEntry::make('read_at')
-                    ->label('Read')
+                    ->label(__('Read'))
                     ->dateTime()
-                    ->placeholder('Unread'),
+                    ->placeholder(__('Unread')),
                 TextEntry::make('message')
+                    ->label(__('Message'))
                     ->columnSpanFull(),
             ])
             ->columns(2);

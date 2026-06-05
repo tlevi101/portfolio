@@ -36,9 +36,12 @@ class ProfilePage extends Page implements HasForms
 
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedUser;
 
-    protected static ?string $navigationLabel = 'Profile';
-
     protected static ?int $navigationSort = 1;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Profile');
+    }
 
     /** @var array<string, mixed> */
     public array $data = [];
@@ -55,18 +58,19 @@ class ProfilePage extends Page implements HasForms
             ->components([
                 Tabs::make('Profile')
                     ->tabs([
-                        Tab::make('Hero')
+                        Tab::make(__('Hero'))
                             ->schema([
-                                TextInput::make('full_name')->required(),
-                                TextInput::make('role')->required(),
-                                TextInput::make('tagline')->required()->columnSpanFull(),
-                                TextInput::make('hero_eyebrow'),
-                                TextInput::make('location')->required(),
-                                TextInput::make('phone'),
-                                TextInput::make('portfolio_url')->url(),
-                                Toggle::make('available'),
-                                TextInput::make('available_text')->placeholder('Open to work'),
+                                TextInput::make('full_name')->label(__('Full name'))->required(),
+                                TextInput::make('role')->label(__('Role'))->required(),
+                                TextInput::make('tagline')->label(__('Tagline'))->required()->columnSpanFull(),
+                                TextInput::make('hero_eyebrow')->label(__('Hero eyebrow')),
+                                TextInput::make('location')->label(__('Location'))->required(),
+                                TextInput::make('phone')->label(__('Phone')),
+                                TextInput::make('portfolio_url')->label(__('Portfolio URL'))->url(),
+                                Toggle::make('available')->label(__('Available')),
+                                TextInput::make('available_text')->label(__('Available text'))->placeholder(__('Open to work')),
                                 FileUpload::make('avatar_path')
+                                    ->label(__('Avatar'))
                                     ->image()
                                     ->disk('public')
                                     ->directory('profile')
@@ -81,40 +85,41 @@ class ProfilePage extends Page implements HasForms
                             ])
                             ->columns(2),
 
-                        Tab::make('Projects')
+                        Tab::make(__('Projects'))
                             ->schema([
-                                TextInput::make('projects_heading')->columnSpanFull(),
-                                TextInput::make('projects_subheading')->columnSpanFull(),
+                                TextInput::make('projects_heading')->label(__('Projects heading'))->columnSpanFull(),
+                                TextInput::make('projects_subheading')->label(__('Projects subheading'))->columnSpanFull(),
                             ]),
 
-                        Tab::make('Experiments')
+                        Tab::make(__('Experiments'))
                             ->schema([
-                                TextInput::make('experiments_heading')->columnSpanFull(),
-                                Textarea::make('experiments_intro')->rows(3)->columnSpanFull(),
+                                TextInput::make('experiments_heading')->label(__('Experiments heading'))->columnSpanFull(),
+                                Textarea::make('experiments_intro')->label(__('Experiments intro'))->rows(3)->columnSpanFull(),
                             ]),
 
-                        Tab::make('About')
+                        Tab::make(__('About'))
                             ->schema([
-                                TextInput::make('about_heading')->columnSpanFull(),
-                                Textarea::make('about')->rows(5)->required()->columnSpanFull(),
+                                TextInput::make('about_heading')->label(__('About heading'))->columnSpanFull(),
+                                Textarea::make('about')->label(__('About'))->rows(5)->required()->columnSpanFull(),
                                 Repeater::make('experience_highlights')
-                                    ->simple(TextInput::make('item')->label('Highlight'))
+                                    ->label(__('Experience highlights'))
+                                    ->simple(TextInput::make('item')->label(__('Highlight')))
                                     ->columnSpanFull(),
                             ]),
 
-                        Tab::make('Contact')
+                        Tab::make(__('Contact'))
                             ->schema([
-                                TextInput::make('contact_heading')->columnSpanFull(),
-                                Textarea::make('contact_intro')->rows(3)->columnSpanFull(),
-                                TextInput::make('email')->email()->required(),
-                                TextInput::make('linkedin_url')->url(),
-                                TextInput::make('github_url')->url(),
+                                TextInput::make('contact_heading')->label(__('Contact heading'))->columnSpanFull(),
+                                Textarea::make('contact_intro')->label(__('Contact intro'))->rows(3)->columnSpanFull(),
+                                TextInput::make('email')->label(__('Email'))->email()->required(),
+                                TextInput::make('linkedin_url')->label(__('LinkedIn URL'))->url(),
+                                TextInput::make('github_url')->label(__('GitHub URL'))->url(),
                             ])
                             ->columns(2),
 
-                        Tab::make('Footer')
+                        Tab::make(__('Footer'))
                             ->schema([
-                                TextInput::make('footer_text')->columnSpanFull(),
+                                TextInput::make('footer_text')->label(__('Footer text'))->columnSpanFull(),
                             ]),
                     ])
                     ->columnSpanFull(),
@@ -127,7 +132,7 @@ class ProfilePage extends Page implements HasForms
         Profile::singleton()->fill($data)->save();
 
         Notification::make()
-            ->title('Profile saved')
+            ->title(__('Profile saved'))
             ->success()
             ->send();
     }
@@ -139,7 +144,7 @@ class ProfilePage extends Page implements HasForms
     {
         return [
             Action::make('save')
-                ->label('Save changes')
+                ->label(__('Save changes'))
                 ->submit('save'),
         ];
     }
@@ -149,7 +154,7 @@ class ProfilePage extends Page implements HasForms
         app(CvGeneratorService::class)->generate();
 
         Notification::make()
-            ->title('CV regenerated')
+            ->title(__('CV regenerated'))
             ->success()
             ->send();
     }
@@ -161,7 +166,7 @@ class ProfilePage extends Page implements HasForms
     {
         return [
             Action::make('regenerateCv')
-                ->label('Regenerate CV')
+                ->label(__('Regenerate CV'))
                 ->icon(Heroicon::OutlinedArrowPath)
                 ->action('regenerateCv'),
         ];
@@ -169,6 +174,6 @@ class ProfilePage extends Page implements HasForms
 
     public function getTitle(): string|Htmlable
     {
-        return 'Profile';
+        return __('Profile');
     }
 }

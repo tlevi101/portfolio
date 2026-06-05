@@ -13,20 +13,21 @@ class WorkExperienceForm
     {
         return $schema
             ->components([
-                Section::make('Position')
+                Section::make(__('Position'))
                     ->schema([
-                        TextInput::make('company')->required(),
-                        TextInput::make('title')->required(),
-                        TextInput::make('period')->required()->placeholder('2024 – Present'),
-                        TextInput::make('location')->placeholder('Budapest, Hungary'),
-                        TextInput::make('sort_order')->numeric()->default(0),
+                        TextInput::make('company')->label(__('Company'))->required(),
+                        TextInput::make('title')->label(__('Job title'))->required(),
+                        TextInput::make('period')->label(__('Period'))->required()->placeholder(__('2024 – Present')),
+                        TextInput::make('location')->label(__('Location'))->placeholder(__('Budapest, Hungary')),
+                        TextInput::make('sort_order')->label(__('Sort order'))->numeric()->default(0),
                     ])
                     ->columns(2),
 
-                Section::make('Responsibilities')
+                Section::make(__('Responsibilities'))
                     ->schema([
                         Repeater::make('bullets')
-                            ->simple(TextInput::make('item')->label('Bullet point'))
+                            ->hiddenLabel()
+                            ->simple(TextInput::make('item')->label(__('Bullet point')))
                             ->columnSpanFull(),
                     ]),
             ]);
