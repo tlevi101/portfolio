@@ -76,7 +76,7 @@ class CvGeneratorService
 
         Storage::disk('public')->put('cv/cv.pdf', $pdf->output());
 
-        Profile::singleton()->update(['cv_path' => 'cv/cv.pdf']);
+        $profile->update(['cv_path' => 'cv/cv.pdf']);
 
         return 'cv/cv.pdf';
     }

@@ -58,12 +58,13 @@ class ProfilePage extends Page implements HasForms
                                 TextInput::make('tagline')->required()->columnSpanFull(),
                                 TextInput::make('hero_eyebrow'),
                                 TextInput::make('location')->required(),
-                                        TextInput::make('phone'),
+                                TextInput::make('phone'),
                                 TextInput::make('portfolio_url')->url(),
                                 Toggle::make('available'),
                                 TextInput::make('available_text')->placeholder('Open to work'),
                                 FileUpload::make('avatar_path')
                                     ->image()
+                                    ->disk('public')
                                     ->directory('profile')
                                     ->columnSpanFull(),
                             ])
