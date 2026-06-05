@@ -97,6 +97,22 @@ jobs:
             # config:cache below), but be writable. Make sure it exists.
             mkdir -p "$SITE/bootstrap/cache"
 
+            # Reset perms so php-fpm (www-data) can write to storage + bootstrap/cache.
+            # Setgid (2775) makes newly created files inherit the www-data group.
+            # Pre-create Livewire's upload temp dir (Laravel 11 'local' disk = storage/app/private)
+            # so www-data never has to mkdir it with a restrictive umask -> "failed to upload".
+            install -d -o deploy -g www-data -m 2770 "$DATA/storage/app/private/livewire-tmp"
+            chown -R deploy:www-data "$DATA/storage" "$SITE/bootstrap/cache"
+            find "$DATA/storage" "$SITE/bootstrap/cache" -type d -exec chmod 2775 {} \;
+            find "$DATA/storage" "$SITE/bootstrap/cache" -type f -exec chmod 664 {} \;
+
+            # Refuse to deploy if .env is empty — otherwise Laravel silently falls back to
+            # SQLite defaults and migrations land in the wrong database.
+            if [ ! -s "$DATA/.env" ]; then
+              echo "ERROR: $DATA/.env is empty. Bootstrap it before deploying." >&2
+              exit 1
+            fi
+
             # Laravel post-install
             cd "$SITE"
             php artisan migrate --force

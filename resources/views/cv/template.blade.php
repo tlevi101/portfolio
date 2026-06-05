@@ -145,10 +145,13 @@
     .photo {
       width: 100%;
       margin-bottom: 6mm;
+      text-align: center;
     }
 
     .photo img {
-      width: 100%;
+      width: 40mm;
+      height: 40mm;
+      object-fit: cover;
       border: 0.3mm solid #d6d3cc;
     }
 
@@ -206,6 +209,14 @@
       color: #8a8a86;
     }
 
+    .qr-url {
+      display: block;
+      margin-top: 0.8mm;
+      font-size: 7.5pt;
+      color: #2c2c2c;
+      word-wrap: break-word;
+    }
+
     .skill-group {
       margin-bottom: 3mm;
     }
@@ -231,6 +242,10 @@
 
     <div class="side-section">
       <div class="side-title">Kapcsolat</div>
+      <div class="side-item">
+        <div class="side-label">Név</div>
+        <div class="side-value">{{ $profile->full_name }}</div>
+      </div>
       <div class="side-item">
         <div class="side-label">Email</div>
         <div class="side-value">{{ $profile->email }}</div>
@@ -268,9 +283,11 @@
     </div>
 
     @if ($qr)
+      @php($portfolioUrl = $profile->portfolio_url ?: url('/'))
       <div class="qr">
         <img src="{{ $qr }}" alt="Portfólió QR" />
         <span class="qr-label">Portfólió</span>
+        <span class="qr-url">{{ rtrim(parse_url($portfolioUrl, PHP_URL_HOST) . (parse_url($portfolioUrl, PHP_URL_PATH) ?? ''), '/') }}</span>
       </div>
     @endif
 
