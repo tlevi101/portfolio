@@ -1,19 +1,23 @@
-<section class="section hero" id="top" style="padding-top: clamp(3rem, 10vw, 7rem);">
-    <div class="container hero-layout">
-        <div class="hero-copy reveal">
+<section class="section pt-12 md:pt-24" id="top">
+    <div class="container grid items-center gap-10 md:grid-cols-[1.4fr_0.6fr] md:gap-12">
+        <div class="reveal">
             @if ($profile->hero_eyebrow)
-                <span class="eyebrow">{{ $profile->hero_eyebrow }}</span>
+                <span class="text-xs uppercase tracking-[0.12em] text-faint">{{ $profile->hero_eyebrow }}</span>
             @endif
 
-            <h1 style="font-size: clamp(3rem, 7vw, 6.3rem); max-width: 9ch; text-wrap: balance;">
+            <h1 class="mt-3 max-w-[12ch] text-balance font-display text-display leading-[1.02] tracking-[-0.03em]">
                 {{ $profile->full_name }}
             </h1>
 
-            <p style="color: var(--color-text-muted); font-size: var(--text-lg); max-width: 42rem;">
+            <p class="mt-4 text-lead font-medium text-ink">
+                {{ $profile->role }}
+            </p>
+
+            <p class="mt-3 max-w-xl text-muted">
                 {{ $profile->tagline }}
             </p>
 
-            <div class="hero-actions">
+            <div class="mt-7 flex flex-wrap items-center gap-3">
                 <a class="button button-primary" href="#contact">Contact me</a>
                 <a class="button button-secondary" href="#projects">View projects</a>
                 @if ($profile->cv_path)
@@ -24,7 +28,7 @@
             </div>
         </div>
 
-        <aside class="hero-aside reveal" aria-label="Profile summary">
+        <aside class="reveal mx-auto w-full max-w-[17rem] md:mx-0 md:justify-self-end" aria-label="Profile summary">
             <div class="portrait-block">
                 <div class="portrait" role="img" aria-label="Profile photo of {{ $profile->full_name }}">
                     @if ($profile->avatar_path)
