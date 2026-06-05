@@ -1,0 +1,179 @@
+{
+    "profile": {
+        "full_name": "Torma Levente",
+        "role": "Full-Stack Web Developer",
+        "tagline": "Full-stack fejlesztő Laravel backend és React/Next.js/Livewire frontend tapasztalattal, több éve éles webes rendszereken dolgozom.",
+        "hero_eyebrow": "Full-stack webfejlesztő",
+        "location": "Budapest, Magyarország",
+        "available": true,
+        "available_text": "Nyitott vagyok új lehetőségekre",
+        "projects_heading": "Kiemelt projektek",
+        "projects_subheading": "Valódi felhasználókat kiszolgáló, éles rendszerek az adatbázistól a felületig.",
+        "experiments_heading": "Saját projektek",
+        "experiments_intro": "Saját projektek és kisebb munkák, ahol új ötleteket és technológiákat próbáltam ki.",
+        "about_heading": "Rólam",
+        "about": "Full-stack fejlesztő vagyok, fő erősségem a Laravel/PHP backend, de frontend oldalon is magabiztosan dolgozom Reacttel, Next.js-szel, Livewire-rel és Vue-val. 2022 óta ugyanazzal a budapesti csapattal dolgozom, a tanulmányaim mellett kezdve. Legszívesebben olyan rendszereken dolgozom, ahol valódi üzleti logika van: fizetés, számlázás, multi-tenant architektúra és tesztelt kód.",
+        "experience_highlights": [
+            "3,5+ év full-stack fejlesztői tapasztalat párhuzamos ügyfélprojekteken",
+            "Laravel 9–12 alapú backendek: REST/JSON API-k, Eloquent, jogosultságkezelés, számlázás, fizetés",
+            "Frontend tapasztalat Reacttel, Next.js-szel, Livewire-rel és Vue + Inertia stackkel",
+            "Integrációk: szamlazz.hu, GP webpay, Klaviyo, Wallet passok, AWS S3"
+        ],
+        "contact_heading": "Lépjünk kapcsolatba",
+        "contact_intro": "Nyitott vagyok full-stack és backend fejlesztői lehetőségekre. Keress nyugodtan e-mailben.",
+        "email": "leventetorma3@gmail.com",
+        "phone": "",
+        "linkedin_url": "",
+        "github_url": "",
+        "portfolio_url": "",
+        "footer_text": "Torma Levente — Full-stack webfejlesztő, Budapest"
+    },
+
+    "skills": [
+        { "group": "Backend", "name": "Laravel", "sort_order": 1 },
+        { "group": "Backend", "name": "PHP", "sort_order": 2 },
+        { "group": "Backend", "name": "MySQL", "sort_order": 3 },
+        { "group": "Backend", "name": "REST / JSON API", "sort_order": 4 },
+        { "group": "Backend", "name": "OpenAPI", "sort_order": 5 },
+        { "group": "Backend", "name": "PHPUnit / Pest", "sort_order": 6 },
+        { "group": "Backend", "name": "Node.js / Express", "sort_order": 7 },
+        { "group": "Backend", "name": "JWT auth", "sort_order": 8 },
+
+        { "group": "Frontend", "name": "React", "sort_order": 1 },
+        { "group": "Frontend", "name": "Next.js", "sort_order": 2 },
+        { "group": "Frontend", "name": "TypeScript", "sort_order": 3 },
+        { "group": "Frontend", "name": "Livewire", "sort_order": 4 },
+        { "group": "Frontend", "name": "Vue + Inertia", "sort_order": 5 },
+        { "group": "Frontend", "name": "Tailwind CSS", "sort_order": 6 },
+        { "group": "Frontend", "name": "MUI", "sort_order": 7 },
+        { "group": "Frontend", "name": "Angular", "sort_order": 8 },
+
+        { "group": "Tools", "name": "Git / GitLab", "sort_order": 1 },
+        { "group": "Tools", "name": "Docker / Sail", "sort_order": 2 },
+        { "group": "Tools", "name": "GitLab CI/CD", "sort_order": 3 },
+        { "group": "Tools", "name": "NX monorepo", "sort_order": 4 },
+        { "group": "Tools", "name": "AWS S3", "sort_order": 5 },
+        { "group": "Tools", "name": "Azure", "sort_order": 6 },
+        { "group": "Tools", "name": "Firebase", "sort_order": 7 },
+        { "group": "Tools", "name": "Linux", "sort_order": 8 },
+
+        { "group": "Other", "name": "Laravel Nova", "sort_order": 1 },
+        { "group": "Other", "name": "Multi-tenant", "sort_order": 2 },
+        { "group": "Other", "name": "C# / WPF", "sort_order": 3 }
+    ],
+
+    "selected_projects": [
+        {
+            "title": "Premio – rendezvényhelyszín-piactér",
+            "summary": "Multi-tenant piactér, ahol partnerek helyszíneket és kapcsolódó szolgáltatásokat hirdetnek, a látogatók pedig ajánlatot kérhetnek.",
+            "problem": "Több, önálló márkájú oldalt kellett egy közös kódbázisból kiszolgálni partner-adminisztrációval és stabil backend–admin kapcsolattal.",
+            "role_description": "A projekt egyik fő fejlesztőjeként Laravel 12 + Livewire 4 alapon dolgoztam a backenden és a publikus felületen. Edit request jóváhagyási folyamatot építettem, dolgoztam a React admin felülethez tartozó backend logikán, és Pest teszteket írtam.",
+            "outcome": "A platformon több, önálló márkájú élő oldal fut, közös kódbázisból kiszolgálva.",
+            "stack": ["Laravel 12", "Livewire 4", "React + TS", "MySQL"],
+            "url": "https://rendezvenyhelyszinek.hu",
+            "featured": true,
+            "sort_order": 1
+        },
+        {
+            "title": "Budapestinfo – turisztikai városkártya",
+            "summary": "A budapesti városkártya online értékesítő és kedvezménykezelő platformja digitális és fizikai kártyákkal, partnerkedvezményekkel és B2B értékesítéssel.",
+            "problem": "Online értékesítési platformot kellett építeni fizetéssel, számlázással, többnyelvűséggel és Wallet-pass támogatással, B2C és B2B csatornán is.",
+            "role_description": "A projekt fő fejlesztőjeként nagyrészt önállóan dolgoztam rajta, Laravel 10 + Nova backenddel és Vue + Inertia frontenddel. Árképzésen, GP webpay fizetésen, Wallet passokon és a B2B értékesítési folyamatokon dolgoztam, és sok esetben közvetlenül az ügyféllel is én tartottam a kapcsolatot.",
+            "outcome": "Egy komplett platform jött létre, amely egy rendszerben kezelte a kártyaértékesítést, a kedvezményeket, a fizetést, a számlázást és a B2B csatornát; a kártyaértékesítés később, tőlünk független okokból átkerült a BKK-hoz.",
+            "stack": ["Laravel 10", "Laravel Nova", "Vue + Inertia", "GP webpay"],
+            "url": "",
+            "featured": false,
+            "sort_order": 2
+        },
+        {
+            "title": "NetPrinter – egyedi nyomtatott termékek webáruháza",
+            "summary": "Egyedi nyomtatható termékek webáruháza, ahol a vásárlók saját képeiket pozicionálhatják a kiválasztott termékeken.",
+            "problem": "A termékkonfigurációból teljes folyamatot kellett építeni a kosártól és rendeléstől a számlázásig és gyártási munkalapokig.",
+            "role_description": "Főként backend oldalon dolgoztam, de jelentős frontend feladatokat is vittem. Termék- és változatmodellt, kosár- és rendelési folyamatot, vásárlói fiókokat, Google bejelentkezést, szamlazz.hu és Klaviyo integrációt készítettem, valamint részt vettem a termékkonfigurátor frontend fejlesztésében.",
+            "outcome": "Az áruház lefedi a teljes folyamatot a kép feltöltésétől és testreszabásától a számlázáson át a gyártási munkalapokig.",
+            "stack": ["Laravel 12", "Next.js", "React + TS", "NX", "szamlazz.hu"],
+            "url": "",
+            "featured": false,
+            "sort_order": 3
+        },
+        {
+            "title": "Ki mit tube – videós tehetségkutató",
+            "summary": "Videós nevezésre és közönségszavazásra épülő tehetségkutató platform admin- és moderációs felülettel.",
+            "problem": "A beküldött videók technikai és tartalmi jóváhagyását, a kategóriákat, az időszakokat és a szavazási folyamatot kellett kezelni.",
+            "role_description": "Kizárólag az admin felületen dolgoztam (Next.js + React), Laravel 11 JSON API-ra építve: produkció- és videókezelés, jóváhagyási és elutasítási folyamatok, videófeltöltés és szűrők.",
+            "outcome": "A rendszer végigviszi a moderációs és szavazási folyamatot a beküldéstől a nyilvános megjelenésig.",
+            "stack": ["Next.js", "React + TS", "Laravel 11"],
+            "url": "",
+            "featured": false,
+            "sort_order": 4
+        },
+        {
+            "title": "Radaway – szanitergyártó katalógus",
+            "summary": "Szanitergyártó termékkatalógusa és weboldala automatizált termékszinkronnal egy külső rendszerből.",
+            "problem": "A termékeket megbízhatóan kellett szinkronizálni külső forrásból, majd kereshető, többnyelvű katalógusként megjeleníteni.",
+            "role_description": "Az oldal elkészülte után a támogatási és karbantartási oldalát vittem Laravel + Nova alapon: termékszinkron, katalógusfunkciók, tartalomkezelés és SEO-feladatok.",
+            "outcome": "Stabil, évek óta működő gyártói platform automatizált termékszinkronnal; a hosszú távú támogatását és karbantartását én biztosítottam.",
+            "stack": ["Laravel", "Laravel Nova", "Blade", "MySQL"],
+            "url": "",
+            "featured": false,
+            "sort_order": 5
+        }
+    ],
+
+    "side_projects": [
+        {
+            "title": "Function Wars (szakdolgozat)",
+            "summary": "Valós idejű multiplayer játék, ahol a játékosok matematikai függvényekkel próbálják eltalálni egymást.",
+            "stack": ["Node.js", "Express", "Angular", "WebSocket"],
+            "url": "",
+            "sort_order": 1
+        },
+        {
+            "title": "PC-statisztika + élő háttérkép",
+            "summary": "Webszerver, amely kiolvassa a PC állapotát, például az FPS-t, a hőmérsékletet és a CPU-adatokat, majd ezeket Wallpaper Engine-ben futó HTML háttérképen jeleníti meg.",
+            "stack": ["Webszerver", "HTML/JS", "Wallpaper Engine"],
+            "url": "",
+            "sort_order": 2
+        },
+        {
+            "title": "Forms – űrlapkészítő",
+            "summary": "Egyszerű, Laravel alapú form builder alkalmazás.",
+            "stack": ["Laravel", "PHP", "MySQL"],
+            "url": "",
+            "sort_order": 3
+        },
+        {
+            "title": "Snake – C# WPF játék",
+            "summary": "Klasszikus Snake játék C# WPF-ben, amelyet eredetileg Java-ban készítettem el, majd C#-ra portoltam.",
+            "stack": ["C#", "WPF", ".NET"],
+            "url": "",
+            "sort_order": 4
+        }
+    ],
+
+    "work_experience": [
+        {
+            "company": "Merkit (korábban Moon, majd Hyperdot)",
+            "title": "Full-Stack Developer",
+            "period": "2022.08 – 2026.07",
+            "location": "Budapest, Magyarország",
+            "bullets": [
+                "2022 augusztusa óta ugyanazzal a csapattal dolgoztam, kezdetben a tanulmányaim mellett, 2023 novemberétől teljes munkaidőben.",
+                "Laravel 9–12 alapú backendeken dolgoztam: REST/JSON API-k, Eloquent, jogosultságkezelés, fizetés, számlázás, queue-k.",
+                "Frontend oldalon React + Next.js, Livewire 4, valamint Vue + Inertia stackkel is dolgoztam.",
+                "Számos integráción dolgoztam: szamlazz.hu, GP webpay, Klaviyo, Wallet passok, AWS S3; emellett Docker és GitLab CI használatával."
+            ],
+            "sort_order": 1
+        }
+    ],
+
+    "education": [
+        {
+            "school": "Eötvös Loránd Tudományegyetem (ELTE)",
+            "degree": "Programtervező informatikus BSc",
+            "graduation_year": "2023",
+            "location": "Budapest, Magyarország",
+            "sort_order": 1
+        }
+    ]
+}

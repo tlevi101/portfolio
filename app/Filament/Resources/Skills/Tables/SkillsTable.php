@@ -17,14 +17,16 @@ class SkillsTable
         return $table
             ->columns([
                 TextColumn::make('group')
+                    ->label(__('Group'))
                     ->badge()
                     ->formatStateUsing(fn (SkillGroup $state): string => $state->label())
                     ->sortable(),
-                TextColumn::make('name')->searchable()->sortable(),
-                TextColumn::make('sort_order')->sortable(),
+                TextColumn::make('name')->label(__('Skill name'))->searchable()->sortable(),
+                TextColumn::make('sort_order')->label(__('Sort order'))->sortable(),
             ])
             ->filters([
                 SelectFilter::make('group')
+                    ->label(__('Group'))
                     ->options(collect(SkillGroup::cases())->mapWithKeys(
                         fn (SkillGroup $group): array => [$group->value => $group->label()]
                     )),

@@ -20,6 +20,21 @@ class SkillResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
+    public static function getNavigationLabel(): string
+    {
+        return __('Skills');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('skill');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('skills');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return SkillForm::configure($schema);

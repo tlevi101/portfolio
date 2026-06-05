@@ -1,11 +1,11 @@
 <div>
     @if ($submitted)
         <div class="contact-success">
-            <p>Thanks for reaching out — I'll get back to you soon.</p>
+            <p>{{ __("Thanks for reaching out — I'll get back to you soon.") }}</p>
         </div>
     @else
         <form wire:submit="submit" class="contact-form-fields" novalidate>
-            <div style="position: absolute; left: -9999px;" aria-hidden="true">
+            <div class="absolute left-[-9999px]" aria-hidden="true">
                 <label for="cf-website">Website</label>
                 <input
                     id="cf-website"
@@ -17,7 +17,7 @@
             </div>
 
             <div class="form-field">
-                <label for="cf-name" class="label">Name</label>
+                <label for="cf-name" class="label">{{ __('Name') }}</label>
                 <input
                     id="cf-name"
                     type="text"
@@ -31,7 +31,7 @@
             </div>
 
             <div class="form-field">
-                <label for="cf-email" class="label">Email</label>
+                <label for="cf-email" class="label">{{ __('Email') }}</label>
                 <input
                     id="cf-email"
                     type="email"
@@ -45,7 +45,7 @@
             </div>
 
             <div class="form-field">
-                <label for="cf-message" class="label">Message</label>
+                <label for="cf-message" class="label">{{ __('Message') }}</label>
                 <textarea
                     id="cf-message"
                     wire:model="message"
@@ -58,8 +58,8 @@
             </div>
 
             <button type="submit" class="button button-primary" wire:loading.attr="disabled">
-                <span wire:loading.remove>Send message</span>
-                <span wire:loading>Sending…</span>
+                <span wire:loading.remove>{{ __('Send message') }}</span>
+                <span wire:loading>{{ __('Sending…') }}</span>
             </button>
         </form>
     @endif

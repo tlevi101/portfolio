@@ -14,12 +14,13 @@ class SkillForm
         return $schema
             ->components([
                 Select::make('group')
+                    ->label(__('Group'))
                     ->options(collect(SkillGroup::cases())->mapWithKeys(
                         fn (SkillGroup $group): array => [$group->value => $group->label()]
                     ))
                     ->required(),
-                TextInput::make('name')->required(),
-                TextInput::make('sort_order')->numeric()->default(0),
+                TextInput::make('name')->label(__('Skill name'))->required(),
+                TextInput::make('sort_order')->label(__('Sort order'))->numeric()->default(0),
             ])
             ->columns(2);
     }

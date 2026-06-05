@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Observers\CvDependencyObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -16,11 +18,14 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $about_heading
  * @property string|null $contact_heading
  * @property string|null $contact_intro
+ * @property string|null $phone
  * @property string|null $linkedin_url
  * @property string|null $github_url
+ * @property string|null $portfolio_url
  * @property string|null $cv_path
  * @property string|null $footer_text
  */
+#[ObservedBy(CvDependencyObserver::class)]
 class Profile extends Model
 {
     protected $table = 'profile';
@@ -44,8 +49,10 @@ class Profile extends Model
         'contact_heading',
         'contact_intro',
         'email',
+        'phone',
         'linkedin_url',
         'github_url',
+        'portfolio_url',
         'cv_path',
         'footer_text',
     ];

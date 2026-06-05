@@ -1,32 +1,35 @@
-<section class="section hero" id="top" style="padding-top: clamp(3rem, 10vw, 7rem);">
-    <div class="container hero-layout">
-        <div class="hero-copy reveal">
+<section class="section pt-12 min-[860px]:pt-24" id="top">
+    <div class="shell grid items-center gap-10 min-[860px]:grid-cols-[1.25fr_0.85fr] min-[860px]:gap-12">
+        <div class="reveal">
             @if ($profile->hero_eyebrow)
-                <span class="eyebrow">{{ $profile->hero_eyebrow }}</span>
+                <span class="text-xs uppercase tracking-[0.12em] text-faint">{{ $profile->hero_eyebrow }}</span>
             @endif
 
-            <h1 style="font-size: clamp(3rem, 7vw, 6.3rem); max-width: 9ch; text-wrap: balance;">
+            <h1 class="mt-3 max-w-[12ch] text-balance font-display text-display leading-[1.02] tracking-[-0.03em]">
                 {{ $profile->full_name }}
             </h1>
 
-            <p style="color: var(--color-text-muted); font-size: var(--text-lg); max-width: 42rem;">
+            <p class="mt-4 text-lead font-medium text-ink">
+                {{ $profile->role }}
+            </p>
+
+            <p class="mt-3 max-w-xl text-muted">
                 {{ $profile->tagline }}
             </p>
 
-            <div class="hero-actions">
-                <a class="button button-primary" href="#contact">Contact me</a>
-                <a class="button button-secondary" href="#projects">View projects</a>
+            <div class="mt-7 flex flex-wrap items-center gap-3">
                 @if ($profile->cv_path)
-                    <a class="button button-link" href="{{ Storage::url($profile->cv_path) }}" target="_blank" rel="noopener noreferrer">
-                        Download CV
+                    <a class="button button-primary" href="{{ route('cv.download') }}" target="_blank" rel="noopener noreferrer">
+                        {{ __('Download CV') }}
                     </a>
                 @endif
+                <a class="button button-secondary" href="#projects">{{ __('View projects') }}</a>
             </div>
         </div>
 
-        <aside class="hero-aside reveal" aria-label="Profile summary">
+        <aside class="reveal mx-auto w-full max-w-[20rem] min-[860px]:mx-0 min-[860px]:max-w-[22rem] min-[860px]:justify-self-end" aria-label="{{ __('Profile summary') }}">
             <div class="portrait-block">
-                <div class="portrait" role="img" aria-label="Profile photo of {{ $profile->full_name }}">
+                <div class="portrait" role="img" aria-label="{{ __('Profile photo of :name', ['name' => $profile->full_name]) }}">
                     @if ($profile->avatar_path)
                         <img src="{{ Storage::url($profile->avatar_path) }}" alt="{{ $profile->full_name }}" />
                     @endif
