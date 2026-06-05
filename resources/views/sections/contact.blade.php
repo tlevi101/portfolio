@@ -14,6 +14,10 @@
             @endif
 
             <ul class="contact-list mt-6">
+                <li>
+                    <span class="label">{{ __('Name') }}</span>
+                    <span>{{ $profile->full_name }}</span>
+                </li>
                 @if ($profile->phone)
                     <li>
                         <span class="label">{{ __('Phone') }}</span>
