@@ -148,8 +148,8 @@
         &:focus { top: 1rem; }
     }
 
-    .container {
-        width: min(calc(100% - 2rem), var(--content-width));
+    .shell {
+        width: min(calc(100% - var(--gutter, 2rem)), var(--content-width));
         margin: 0 auto;
     }
 
@@ -492,6 +492,7 @@
 @media (max-width: 859px) {
     .header-inner { grid-template-columns: 1fr auto; }
     .nameplate span { display: none; }
+    .shell { --gutter: 2rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

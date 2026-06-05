@@ -1,19 +1,25 @@
 <section class="section" id="contact">
-    <div class="container contact-grid">
-        <article class="card reveal">
+    <div class="shell">
+        <article class="card reveal max-w-[38rem]">
             <span class="eyebrow">{{ __('Contact') }}</span>
             @if ($profile->contact_heading ?? false)
-                <h2 style="font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3.4rem); letter-spacing: -0.03em; text-wrap: balance; margin-top: var(--space-3);">
+                <h2 class="section-title mt-3">
                     {{ $profile->contact_heading }}
                 </h2>
             @endif
             @if ($profile->contact_intro ?? false)
-                <p style="color: var(--color-text-muted); margin-top: var(--space-4);">
+                <p class="text-muted mt-4">
                     {{ $profile->contact_intro }}
                 </p>
             @endif
 
-            <ul class="contact-list" style="margin-top: var(--space-6);">
+            <ul class="contact-list mt-6">
+                @if ($profile->phone)
+                    <li>
+                        <span class="label">{{ __('Phone') }}</span>
+                        <a class="text-link" href="tel:{{ preg_replace('/[^+0-9]/', '', $profile->phone) }}">{{ $profile->phone }}</a>
+                    </li>
+                @endif
                 <li>
                     <span class="label">{{ __('Email') }}</span>
                     <a class="text-link" href="mailto:{{ $profile->email }}">{{ $profile->email }}</a>
@@ -43,13 +49,6 @@
                     </li>
                 @endif
             </ul>
-        </article>
-
-        <article class="card reveal">
-            <span class="eyebrow">{{ __('Send a message') }}</span>
-            <div style="margin-top: var(--space-5);">
-                <livewire:contact-form />
-            </div>
         </article>
     </div>
 </section>

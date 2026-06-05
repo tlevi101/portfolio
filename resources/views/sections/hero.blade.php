@@ -1,5 +1,5 @@
-<section class="section pt-12 md:pt-24" id="top">
-    <div class="container grid items-center gap-10 md:grid-cols-[1.4fr_0.6fr] md:gap-12">
+<section class="section pt-12 min-[860px]:pt-24" id="top">
+    <div class="shell grid items-center gap-10 min-[860px]:grid-cols-[1.25fr_0.85fr] min-[860px]:gap-12">
         <div class="reveal">
             @if ($profile->hero_eyebrow)
                 <span class="text-xs uppercase tracking-[0.12em] text-faint">{{ $profile->hero_eyebrow }}</span>
@@ -18,17 +18,16 @@
             </p>
 
             <div class="mt-7 flex flex-wrap items-center gap-3">
-                <a class="button button-primary" href="#contact">{{ __('Contact me') }}</a>
-                <a class="button button-secondary" href="#projects">{{ __('View projects') }}</a>
                 @if ($profile->cv_path)
-                    <a class="button button-link" href="{{ route('cv.download') }}" target="_blank" rel="noopener noreferrer">
+                    <a class="button button-primary" href="{{ route('cv.download') }}" target="_blank" rel="noopener noreferrer">
                         {{ __('Download CV') }}
                     </a>
                 @endif
+                <a class="button button-secondary" href="#projects">{{ __('View projects') }}</a>
             </div>
         </div>
 
-        <aside class="reveal mx-auto w-full max-w-[17rem] md:mx-0 md:justify-self-end" aria-label="{{ __('Profile summary') }}">
+        <aside class="reveal mx-auto w-full max-w-[20rem] min-[860px]:mx-0 min-[860px]:max-w-[22rem] min-[860px]:justify-self-end" aria-label="{{ __('Profile summary') }}">
             <div class="portrait-block">
                 <div class="portrait" role="img" aria-label="{{ __('Profile photo of :name', ['name' => $profile->full_name]) }}">
                     @if ($profile->avatar_path)

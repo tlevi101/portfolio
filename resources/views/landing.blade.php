@@ -14,7 +14,7 @@
     <a class="skip-link" href="#main">{{ __('Skip to content') }}</a>
 
     <header class="site-header">
-        <div class="container header-inner">
+        <div class="shell header-inner">
             <a class="nameplate" href="#top" aria-label="{{ __('Go to top') }}">
                 <strong>{{ $profile->full_name }}</strong>
                 <span>{{ $profile->role }}</span>
@@ -44,7 +44,7 @@
 
     @if ($profile->footer_text)
         <footer class="site-footer">
-            <div class="container">{{ $profile->footer_text }}</div>
+            <div class="shell">{{ $profile->footer_text }}</div>
         </footer>
     @endif
 

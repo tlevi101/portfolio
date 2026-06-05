@@ -5,7 +5,7 @@
         </div>
     @else
         <form wire:submit="submit" class="contact-form-fields" novalidate>
-            <div style="position: absolute; left: -9999px;" aria-hidden="true">
+            <div class="absolute left-[-9999px]" aria-hidden="true">
                 <label for="cf-website">Website</label>
                 <input
                     id="cf-website"
