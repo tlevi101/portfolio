@@ -15,7 +15,7 @@
             <div class="definition-list mt-5">
                 @foreach ($skills as $groupValue => $groupSkills)
                     <div>
-                        <span class="label">{{ $groupValue }}</span>
+                        <span class="label">{{ __($groupValue) }}</span>
                         <p class="text-muted">
                             {{ $groupSkills->pluck('name')->join(', ') }}
                         </p>

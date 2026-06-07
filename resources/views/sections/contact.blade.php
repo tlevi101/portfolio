@@ -44,10 +44,10 @@
                         </a>
                     </li>
                 @endif
-                @if ($profile->cv_path)
+                @if ($profile->cv)
                     <li>
                         <span class="label">CV</span>
-                        <a class="text-link" href="{{ route('cv.download') }}" target="_blank" rel="noopener noreferrer">
+                        <a class="text-link" href="{{ route('cv.download', ['slug' => $profile->slug, 'lang' => $profile->locale]) }}" target="_blank" rel="noopener noreferrer">
                             {{ __('Download resume') }}
                         </a>
                     </li>

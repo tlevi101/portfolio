@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="hu">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
   <meta charset="UTF-8" />
   <style>
@@ -148,11 +148,22 @@
       text-align: center;
     }
 
-    .photo img {
-      width: 40mm;
-      height: 40mm;
-      object-fit: cover;
-      border: 0.3mm solid #d6d3cc;
+    /* Matte frame ("keret") around the photo */
+    .photo-frame {
+      display: inline-block;
+      padding: 1.4mm;
+      background: #ffffff;
+      border: 0.4mm solid #d6d3cc;
+      border-radius: 4mm;
+    }
+
+    /* Fixed width + auto height keeps the original aspect ratio in dompdf
+       (which ignores object-fit); the radius gives the soft edge. */
+    .photo-frame img {
+      display: block;
+      width: 38mm;
+      height: auto;
+      border-radius: 2.8mm;
     }
 
     .side-title {
@@ -237,28 +248,28 @@
   {{-- Sidebar (repeats on every page) --}}
   <div class="sidebar">
     @if ($avatar)
-      <div class="photo"><img src="{{ $avatar }}" alt="{{ $profile->full_name }}" /></div>
+      <div class="photo"><span class="photo-frame"><img src="{{ $avatar }}" alt="{{ $profile->full_name }}" /></span></div>
     @endif
 
     <div class="side-section">
-      <div class="side-title">Kapcsolat</div>
+      <div class="side-title">{{ __('Contact') }}</div>
       <div class="side-item">
-        <div class="side-label">Név</div>
+        <div class="side-label">{{ __('Name') }}</div>
         <div class="side-value">{{ $profile->full_name }}</div>
       </div>
       <div class="side-item">
-        <div class="side-label">Email</div>
+        <div class="side-label">{{ __('Email') }}</div>
         <div class="side-value">{{ $profile->email }}</div>
       </div>
       @if ($profile->phone)
         <div class="side-item">
-          <div class="side-label">Telefon</div>
+          <div class="side-label">{{ __('Phone') }}</div>
           <div class="side-value">{{ $profile->phone }}</div>
         </div>
       @endif
       @if ($profile->location)
         <div class="side-item">
-          <div class="side-label">Helyszín</div>
+          <div class="side-label">{{ __('Location') }}</div>
           <div class="side-value">{{ $profile->location }}</div>
         </div>
       @endif
@@ -276,7 +287,7 @@
       @endif
       @if ($profile->portfolio_url)
         <div class="side-item">
-          <div class="side-label">Portfólió</div>
+          <div class="side-label">{{ __('Portfolio') }}</div>
           <div class="side-value">{{ parse_url($profile->portfolio_url, PHP_URL_HOST) . parse_url($profile->portfolio_url, PHP_URL_PATH) }}</div>
         </div>
       @endif
@@ -285,18 +296,18 @@
     @if ($qr)
       @php($portfolioUrl = $profile->portfolio_url ?: url('/'))
       <div class="qr">
-        <img src="{{ $qr }}" alt="Portfólió QR" />
-        <span class="qr-label">Portfólió</span>
+        <img src="{{ $qr }}" alt="{{ __('Portfolio') }}" />
+        <span class="qr-label">{{ __('Portfolio') }}</span>
         <span class="qr-url">{{ rtrim(parse_url($portfolioUrl, PHP_URL_HOST) . (parse_url($portfolioUrl, PHP_URL_PATH) ?? ''), '/') }}</span>
       </div>
     @endif
 
     @if ($skillsByGroup->isNotEmpty())
       <div class="side-section">
-        <div class="side-title">Készségek</div>
+        <div class="side-title">{{ __('Skills') }}</div>
         @foreach ($skillsByGroup as $groupValue => $groupSkills)
           <div class="skill-group">
-            <div class="skill-group-name">{{ $groupSkills->first()->group->label() }}</div>
+            <div class="skill-group-name">{{ __($groupSkills->first()->group->label()) }}</div>
             <div class="skill-group-items">{{ $groupSkills->pluck('name')->implode(', ') }}</div>
           </div>
         @endforeach
@@ -314,7 +325,7 @@
 
     @if ($workExperiences->isNotEmpty())
       <div class="section">
-        <div class="section-title">Tapasztalat</div>
+        <div class="section-title">{{ __('Experience') }}</div>
         @foreach ($workExperiences as $job)
           <div class="entry">
             <table class="row"><tr>
@@ -338,7 +349,7 @@
 
     @if ($selectedProjects->isNotEmpty())
       <div class="section">
-        <div class="section-title">Kiemelt projektek</div>
+        <div class="section-title">{{ __('Selected projects') }}</div>
         @foreach ($selectedProjects as $project)
           <div class="entry">
             <table class="row"><tr>
@@ -357,12 +368,12 @@
 
     @if ($educations->isNotEmpty())
       <div class="section">
-        <div class="section-title">Tanulmányok</div>
+        <div class="section-title">{{ __('Education') }}</div>
         @foreach ($educations as $edu)
           <div class="entry">
             <table class="row"><tr>
               <td class="row-l">{{ $edu->school }}</td>
-              <td class="row-r">{{ $edu->graduation_year }}</td>
+              <td class="row-r">{{ $edu->start_year ? $edu->start_year.' – '.$edu->graduation_year : $edu->graduation_year }}</td>
             </tr></table>
             @if ($edu->degree || $edu->location)
               <div class="entry-sub">{{ implode(' — ', array_filter([$edu->degree, $edu->location])) }}</div>

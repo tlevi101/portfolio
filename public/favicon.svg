@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Torma Levente">
+  <title>Torma Levente</title>
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1d6b73"/>
+      <stop offset="0.55" stop-color="#2d547c"/>
+      <stop offset="1" stop-color="#6742ae"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded tile -->
+  <rect x="4" y="4" width="92" height="92" rx="22" fill="url(#tile)"/>
+  <rect x="4.75" y="4.75" width="90.5" height="90.5" rx="21.25"
+        fill="none" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.5"/>
+
+  <!-- TL monogram: two separate letters -->
+  <g fill="#ffffff">
+    <!-- T -->
+    <rect x="22" y="29" width="31" height="11" rx="3"/>
+    <rect x="32" y="29" width="11" height="42" rx="3"/>
+    <!-- L -->
+    <rect x="55" y="29" width="11" height="42" rx="3"/>
+    <rect x="55" y="60" width="23" height="11" rx="3"/>
+  </g>
+</svg>

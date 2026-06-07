@@ -201,6 +201,35 @@
         &:hover { transform: translateY(-1px); }
     }
 
+    .header-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3);
+    }
+
+    .lang-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.15rem;
+        padding: 0.2rem;
+        border: 1px solid var(--p-border);
+        border-radius: 999px;
+        background: var(--p-surface);
+        a {
+            padding: 0.25rem 0.6rem;
+            border-radius: 999px;
+            font-size: var(--text-xs);
+            letter-spacing: 0.04em;
+            color: var(--p-text-muted);
+            transition: background var(--transition), color var(--transition);
+        }
+        a:hover { color: var(--p-text); }
+        a.is-active {
+            color: var(--p-text);
+            background: color-mix(in srgb, var(--p-accent) 16%, transparent);
+        }
+    }
+
     /* Sections */
     .section {
         padding-block: clamp(var(--space-10), 8vw, var(--space-24));

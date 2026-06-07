@@ -2,37 +2,49 @@
 
 namespace App\Services;
 
+use App\Enums\ProjectType;
+use App\Models\Cv;
 use App\Models\Education;
-use App\Models\Profile;
 use App\Models\Project;
 use App\Models\Skill;
 use App\Models\WorkExperience;
 use Barryvdh\DomPDF\Facade\Pdf;
+use chillerlan\QRCode\Output\QROutputInterface;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
-use chillerlan\QRCode\Output\QROutputInterface;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Storage;
 
 class CvGeneratorService
 {
-    public function generate(): string
+    /**
+     * Render and store the PDF for a specific CV, inheriting identity, skills
+     * and selected projects from its portfolio and using its own work
+     * experience and education entries.
+     */
+    public function generateFor(Cv $cv): string
     {
-        $profile = Profile::singleton();
+        $portfolio = $cv->portfolio;
+
+        if ($portfolio === null) {
+            throw new \RuntimeException("CV #{$cv->id} has no linked portfolio.");
+        }
 
         /** @var Collection<int, WorkExperience> $workExperiences */
-        $workExperiences = WorkExperience::orderBy('sort_order')->get();
+        $workExperiences = $cv->workExperiences()->orderBy('sort_order')->get();
 
         /** @var Collection<int, Education> $educations */
-        $educations = Education::orderBy('sort_order')->get();
+        $educations = $cv->education()->orderBy('sort_order')->get();
 
         /** @var Collection<int, Skill> $skills */
-        $skills = Skill::orderBy('sort_order')->get();
+        $skills = $portfolio->skills()->orderBy('sort_order')->get();
 
         $skillsByGroup = $skills->groupBy(fn (Skill $s): string => $s->group->value);
 
         /** @var Collection<int, Project> $selectedProjects */
-        $selectedProjects = Project::where('type', 'Selected')
+        $selectedProjects = $portfolio->projects()
+            ->where('type', ProjectType::Selected)
             ->orderByDesc('featured')
             ->orderBy('sort_order')
             ->get();
@@ -43,24 +55,27 @@ class CvGeneratorService
             'scale' => 6,
             'imageTransparent' => false,
         ]);
-        $qr = (new QRCode($options))->render($profile->portfolio_url ?: url('/'));
+        $qrTarget = $portfolio->portfolio_url ?: route('portfolio.show', $portfolio->slug);
+        $qr = (new QRCode($options))->render($qrTarget);
 
         $avatar = null;
-        if ($profile->avatar_path && Storage::disk('public')->exists($profile->avatar_path)) {
+        if ($portfolio->avatar_path && Storage::disk('public')->exists($portfolio->avatar_path)) {
             $mime = 'image/jpeg';
-            $ext = strtolower(pathinfo($profile->avatar_path, PATHINFO_EXTENSION));
+            $ext = strtolower(pathinfo($portfolio->avatar_path, PATHINFO_EXTENSION));
             if ($ext === 'png') {
                 $mime = 'image/png';
             } elseif ($ext === 'webp') {
                 $mime = 'image/webp';
             }
-            $avatar = 'data:' . $mime . ';base64,' . base64_encode(
-                (string) Storage::disk('public')->get($profile->avatar_path)
+            $avatar = 'data:'.$mime.';base64,'.base64_encode(
+                (string) Storage::disk('public')->get($portfolio->avatar_path)
             );
         }
 
+        App::setLocale($cv->locale ?: $portfolio->locale);
+
         $html = view('cv.template', [
-            'profile' => $profile,
+            'profile' => $portfolio,
             'workExperiences' => $workExperiences,
             'educations' => $educations,
             'skillsByGroup' => $skillsByGroup,
@@ -71,10 +86,12 @@ class CvGeneratorService
 
         $pdf = Pdf::loadHTML($html)->setPaper('a4', 'portrait');
 
-        Storage::disk('public')->put('cv/cv.pdf', $pdf->output());
+        $path = "cv/{$portfolio->slug}-{$portfolio->locale}.pdf";
 
-        $profile->updateQuietly(['cv_path' => 'cv/cv.pdf']);
+        Storage::disk('public')->put($path, $pdf->output());
 
-        return 'cv/cv.pdf';
+        $cv->updateQuietly(['cv_path' => $path]);
+
+        return $path;
     }
 }
