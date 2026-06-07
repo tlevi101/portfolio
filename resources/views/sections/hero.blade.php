@@ -18,8 +18,8 @@
             </p>
 
             <div class="mt-7 flex flex-wrap items-center gap-3">
-                @if ($profile->cv_path)
-                    <a class="button button-primary" href="{{ route('cv.download') }}" target="_blank" rel="noopener noreferrer">
+                @if ($profile->cv)
+                    <a class="button button-primary" href="{{ route('cv.download', ['slug' => $profile->slug, 'lang' => $profile->locale]) }}" target="_blank" rel="noopener noreferrer">
                         {{ __('Download CV') }}
                     </a>
                 @endif
