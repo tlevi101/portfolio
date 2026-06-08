@@ -18,6 +18,7 @@ use Illuminate\Support\Str;
  * @property bool $is_default
  * @property int|null $cv_id
  * @property array<int, string> $experience_highlights
+ * @property array<int, array{name: string, level: string}>|null $languages
  * @property string|null $hero_eyebrow
  * @property string|null $available_text
  * @property string|null $avatar_path
@@ -71,6 +72,7 @@ class Portfolio extends Model
         'about_heading',
         'about',
         'experience_highlights',
+        'languages',
         'contact_heading',
         'contact_intro',
         'email',
@@ -90,6 +92,7 @@ class Portfolio extends Model
             'available' => 'boolean',
             'is_default' => 'boolean',
             'experience_highlights' => 'array',
+            'languages' => 'array',
         ];
     }
 

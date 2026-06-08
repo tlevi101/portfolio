@@ -125,7 +125,6 @@ jobs:
 
             # Laravel post-install
             cd "$SITE"
-            php artisan migrate --force
             php artisan optimize                 # config:cache + route:cache + view:cache + event:cache
             php artisan storage:link || true
             php artisan filament:optimize || true

@@ -25,6 +25,16 @@
           "Frontend tapasztalat Reacttel, Next.js-szel, Livewire-rel és Vue + Inertia stackkel",
           "Integrációk: szamlazz.hu, GP webpay, Klaviyo, Wallet passok, AWS S3"
         ],
+        "languages": [
+          {
+            "name": "Magyar",
+            "level": "Native"
+          },
+          {
+            "name": "Angol",
+            "level": "B2"
+          }
+        ],
         "contact_heading": "Lépjünk kapcsolatba",
         "contact_intro": "Nyitott vagyok full-stack és backend fejlesztői lehetőségekre. Keress nyugodtan e-mailben.",
         "email": "leventetorma3@gmail.com",
@@ -352,6 +362,16 @@
           "Laravel-based backends: REST/JSON APIs, Eloquent, authorization, invoicing, payments",
           "Frontend experience with React, Next.js, Livewire and the Vue + Inertia stack",
           "Integrations: szamlazz.hu, GP webpay, Klaviyo, Wallet passes, AWS S3"
+        ],
+        "languages": [
+          {
+            "name": "Hungarian",
+            "level": "Native"
+          },
+          {
+            "name": "English",
+            "level": "B2"
+          }
         ],
         "contact_heading": "Let's get in touch",
         "contact_intro": "I'm open to full-stack and backend developer roles. Feel free to reach out by email.",
