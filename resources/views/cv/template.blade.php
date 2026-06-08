@@ -178,17 +178,17 @@
       letter-spacing: 0.8pt;
       text-transform: uppercase;
       color: #111111;
-      padding-bottom: 1.2mm;
+      padding-bottom: 1mm;
       border-bottom: 0.4mm solid #d6d3cc;
-      margin-bottom: 2.6mm;
+      margin-bottom: 2mm;
     }
 
     .side-section {
-      margin-bottom: 4.5mm;
+      margin-bottom: 3.5mm;
     }
 
     .side-item {
-      margin-bottom: 2.4mm;
+      margin-bottom: 1.5mm;
     }
 
     .side-label {
@@ -234,7 +234,7 @@
     }
 
     .skill-group {
-      margin-bottom: 3mm;
+      margin-bottom: 2mm;
     }
 
     .skill-group-name {
@@ -247,10 +247,7 @@
       color: #4a4a4a;
     }
 
-    .lang-item {
-      margin-bottom: 1.4mm;
-    }
-
+    /* Languages: bullet list in the main column, under Education. */
     .lang-name {
       font-weight: bold;
       color: #1a1a1a;
@@ -303,12 +300,8 @@
           <div class="side-value">{{ parse_url($profile->github_url, PHP_URL_HOST) . parse_url($profile->github_url, PHP_URL_PATH) }}</div>
         </div>
       @endif
-      @if ($profile->portfolio_url)
-        <div class="side-item">
-          <div class="side-label">{{ __('Portfolio') }}</div>
-          <div class="side-value">{{ parse_url($profile->portfolio_url, PHP_URL_HOST) . parse_url($profile->portfolio_url, PHP_URL_PATH) }}</div>
-        </div>
-      @endif
+      {{-- Portfolio URL intentionally omitted here: the QR block below already
+           shows it, so listing it in Contact too just duplicates a line. --}}
     </div>
 
     @if ($qr)
@@ -334,17 +327,6 @@
       </div>
     @endif
 
-    @if (! empty($profile->languages))
-      <div class="side-section">
-        <div class="side-title">{{ __('Languages') }}</div>
-        @foreach ($profile->languages as $language)
-          <div class="lang-item">
-            <span class="lang-name">{{ $language['name'] }}</span>
-            <span class="lang-level">{{ __($language['level']) }}</span>
-          </div>
-        @endforeach
-      </div>
-    @endif
   </div>
 
   {{-- Main column --}}
@@ -407,6 +389,17 @@
             @endif
           </div>
         @endforeach
+      </div>
+    @endif
+
+    @if (! empty($profile->languages))
+      <div class="section">
+        <div class="section-title">{{ __('Languages') }}</div>
+        <ul class="bullets">
+          @foreach ($profile->languages as $language)
+            <li><span class="lang-name">{{ $language['name'] }}</span> — <span class="lang-level">{{ __($language['level']) }}</span></li>
+          @endforeach
+        </ul>
       </div>
     @endif
   </div>
