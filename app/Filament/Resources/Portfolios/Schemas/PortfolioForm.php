@@ -155,6 +155,27 @@ class PortfolioForm
                                     ->label(__('Experience highlights'))
                                     ->simple(TextInput::make('item')->label(__('Highlight')))
                                     ->columnSpanFull(),
+                                Repeater::make('languages')
+                                    ->label(__('Languages'))
+                                    ->schema([
+                                        TextInput::make('name')->label(__('Language'))->required(),
+                                        Select::make('level')
+                                            ->label(__('Level'))
+                                            ->options([
+                                                'Native' => __('Native'),
+                                                'C2' => 'C2',
+                                                'C1' => 'C1',
+                                                'B2' => 'B2',
+                                                'B1' => 'B1',
+                                                'A2' => 'A2',
+                                                'A1' => 'A1',
+                                            ])
+                                            ->required(),
+                                    ])
+                                    ->reorderableWithButtons()
+                                    ->itemLabel(fn (array $state): ?string => filled($state['name'] ?? null) ? trim(($state['name'] ?? '').' — '.($state['level'] ?? '')) : null)
+                                    ->columns(2)
+                                    ->columnSpanFull(),
                                 Repeater::make('skills')
                                     ->label(__('Skills'))
                                     ->relationship()

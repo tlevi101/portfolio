@@ -89,10 +89,22 @@ jobs:
             SITE=/var/www/personal-site
             DATA=/var/www/personal-site-data
 
-            # Extract over the existing tree. Tarball excludes .env + storage,
-            # so the symlinks below are preserved across deploys.
-            tar -xzf /tmp/release.tar.gz -C "$SITE" --overwrite
+            # Unpack the release to a staging dir, then rsync it into place with
+            # --delete so files removed from the repo are deleted on the server
+            # too. (Plain `tar --overwrite` only adds/updates files and never
+            # deletes, so removed classes/resources used to linger forever and
+            # kept being auto-discovered by Filament.) The persistent and
+            # symlinked paths are excluded so rsync never touches or deletes them.
+            STAGE="$(mktemp -d)"
+            tar -xzf /tmp/release.tar.gz -C "$STAGE"
             rm /tmp/release.tar.gz
+
+            rsync -rlpt --delete \
+              --exclude='/.env' \
+              --exclude='/storage' \
+              --exclude='/public/storage' \
+              "$STAGE"/ "$SITE"/
+            rm -rf "$STAGE"
 
             # (Re)create symlinks to persistent data — idempotent
             ln -sfn "$DATA/.env"    "$SITE/.env"
@@ -113,7 +125,6 @@ jobs:
 
             # Laravel post-install
             cd "$SITE"
-            php artisan migrate --force
             php artisan optimize                 # config:cache + route:cache + view:cache + event:cache
             php artisan storage:link || true
             php artisan filament:optimize || true

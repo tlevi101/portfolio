@@ -33,7 +33,6 @@
     "Send message": "Üzenet küldése",
     "Sending…": "Küldés…",
     "Too many messages sent. Please try again in :seconds seconds.": "Túl sok üzenetet küldtél. Kérlek, próbáld újra :seconds másodperc múlva.",
-
     "Hero": "Főrész",
     "Experiments": "Saját projektek",
     "Footer": "Lábléc",
@@ -113,7 +112,6 @@
     "education entries": "tanulmányok",
     "contact submission": "üzenet",
     "contact submissions": "üzenetek",
-
     "Portfolios": "Portfóliók",
     "portfolio": "portfólió",
     "portfolios": "portfóliók",
@@ -133,9 +131,10 @@
     "Work experience": "Munkatapasztalat",
     "Generated": "Generálva",
     "No CV is linked to this portfolio yet.": "Ehhez a portfólióhoz még nincs önéletrajz rendelve.",
-
     "Backend": "Backend",
     "Frontend": "Frontend",
     "Tools": "Eszközök",
-    "Other": "Egyéb"
+    "Other": "Egyéb",
+    "Languages": "Nyelvek",
+    "Native": "Anyanyelvi"
 }

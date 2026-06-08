@@ -16,8 +16,8 @@
 
     body {
       font-family: 'DejaVu Sans', sans-serif;
-      font-size: 8.3pt;
-      line-height: 1.3;
+      font-size: 9.2pt;
+      line-height: 1.32;
       color: #222222;
     }
 
@@ -31,7 +31,7 @@
       height: 297mm;
       background: #f3f2ef;
       border-left: 0.3mm solid #d6d3cc;
-      padding: 16mm 7mm;
+      padding: 12mm 7mm;
     }
 
     /* Flowing main column. dompdf treats these as content-box, so width +
@@ -126,25 +126,31 @@
       color: #2c2c2c;
     }
 
-    .proj-line {
-      margin-top: 0.8mm;
+    /* Projects: name on its own line, stack on a second row beneath it.
+       Visually secondary to experience. */
+    .proj-entry {
+      margin-bottom: 1.8mm;
+      font-size: 8.4pt;
     }
 
-    .proj-line .k {
+    .proj-entry:last-child {
+      margin-bottom: 0;
+    }
+
+    .proj-name {
       font-weight: bold;
       color: #1a1a1a;
     }
 
     .proj-stack {
-      margin-top: 0.8mm;
-      font-size: 8pt;
-      color: #555555;
+      margin-top: 0.4mm;
+      color: #777777;
     }
 
     /* Sidebar blocks */
     .photo {
       width: 100%;
-      margin-bottom: 6mm;
+      margin-bottom: 4mm;
       text-align: center;
     }
 
@@ -161,7 +167,7 @@
        (which ignores object-fit); the radius gives the soft edge. */
     .photo-frame img {
       display: block;
-      width: 38mm;
+      width: 34mm;
       height: auto;
       border-radius: 2.8mm;
     }
@@ -178,7 +184,7 @@
     }
 
     .side-section {
-      margin-bottom: 6mm;
+      margin-bottom: 4.5mm;
     }
 
     .side-item {
@@ -200,31 +206,30 @@
 
     .qr {
       text-align: center;
-      margin-bottom: 6mm;
     }
 
-    .qr img {
+    /* Same matte frame as the portrait photo */
+    .qr-frame {
+      display: inline-block;
+      padding: 1.4mm;
+      background: #ffffff;
+      border: 0.4mm solid #d6d3cc;
+      border-radius: 4mm;
+    }
+
+    .qr-frame img {
+      display: block;
       width: 28mm;
       height: 28mm;
-      border: 0.3mm solid #d6d3cc;
-      padding: 1.5mm;
-      background: #ffffff;
-    }
-
-    .qr-label {
-      display: block;
-      margin-top: 1.4mm;
-      font-size: 7pt;
-      letter-spacing: 0.6pt;
-      text-transform: uppercase;
-      color: #8a8a86;
+      border-radius: 2.8mm;
     }
 
     .qr-url {
       display: block;
-      margin-top: 0.8mm;
+      margin-top: 1.8mm;
       font-size: 7.5pt;
-      color: #2c2c2c;
+      color: #1d6b73;
+      text-decoration: none;
       word-wrap: break-word;
     }
 
@@ -240,6 +245,19 @@
 
     .skill-group-items {
       color: #4a4a4a;
+    }
+
+    .lang-item {
+      margin-bottom: 1.4mm;
+    }
+
+    .lang-name {
+      font-weight: bold;
+      color: #1a1a1a;
+    }
+
+    .lang-level {
+      color: #777777;
     }
   </style>
 </head>
@@ -294,11 +312,13 @@
     </div>
 
     @if ($qr)
-      @php($portfolioUrl = $profile->portfolio_url ?: url('/'))
-      <div class="qr">
-        <img src="{{ $qr }}" alt="{{ __('Portfolio') }}" />
-        <span class="qr-label">{{ __('Portfolio') }}</span>
-        <span class="qr-url">{{ rtrim(parse_url($portfolioUrl, PHP_URL_HOST) . (parse_url($portfolioUrl, PHP_URL_PATH) ?? ''), '/') }}</span>
+      @php($portfolioUrl = $profile->portfolio_url ?: route('portfolio.show', $profile->slug))
+      <div class="side-section">
+        <div class="side-title">{{ __('Portfolio') }}</div>
+        <div class="qr">
+          <span class="qr-frame"><img src="{{ $qr }}" alt="{{ __('Portfolio') }}" /></span>
+          <a class="qr-url" href="{{ $portfolioUrl }}">{{ rtrim(preg_replace('#^https?://#', '', $portfolioUrl), '/') }}</a>
+        </div>
       </div>
     @endif
 
@@ -309,6 +329,18 @@
           <div class="skill-group">
             <div class="skill-group-name">{{ __($groupSkills->first()->group->label()) }}</div>
             <div class="skill-group-items">{{ $groupSkills->pluck('name')->implode(', ') }}</div>
+          </div>
+        @endforeach
+      </div>
+    @endif
+
+    @if (! empty($profile->languages))
+      <div class="side-section">
+        <div class="side-title">{{ __('Languages') }}</div>
+        @foreach ($profile->languages as $language)
+          <div class="lang-item">
+            <span class="lang-name">{{ $language['name'] }}</span>
+            <span class="lang-level">{{ __($language['level']) }}</span>
           </div>
         @endforeach
       </div>
@@ -349,15 +381,10 @@
 
     @if ($selectedProjects->isNotEmpty())
       <div class="section">
-        <div class="section-title">{{ __('Selected projects') }}</div>
+        <div class="section-title">{{ __('Projects') }}</div>
         @foreach ($selectedProjects as $project)
-          <div class="entry">
-            <table class="row"><tr>
-              <td class="row-l">{{ $project->title }}</td>
-            </tr></table>
-            @if ($project->summary)
-              <div class="proj-line">{{ $project->summary }}</div>
-            @endif
+          <div class="proj-entry">
+            <div class="proj-name">{{ $project->title }}</div>
             @if (! empty($project->stack))
               <div class="proj-stack">{{ implode(' · ', $project->stack) }}</div>
             @endif
