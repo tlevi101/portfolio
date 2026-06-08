@@ -42,7 +42,10 @@ class CvController extends Controller
         return Storage::disk('public')->response(
             (string) $cv->cv_path,
             $filename,
-            ['Content-Type' => 'application/pdf']
+            [
+                'Content-Type' => 'application/pdf',
+                'Cache-Control' => 'no-store, max-age=0',
+            ]
         );
     }
 }
