@@ -17,9 +17,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // The theme cookie is written client-side (plaintext) and read during
         // SSR to render the correct theme, so it must not be encrypted.
         $middleware->encryptCookies(except: ['theme']);
+
+        // The analytics beacon is an unauthenticated, sessionless POST from the
+        // public page, so it carries no CSRF token.
+        $middleware->validateCsrfTokens(except: ['beacon']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->is('api/*') || $request->is('beacon'),
         );
     })->create();

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Portfolio;
 use App\Services\CvGeneratorService;
+use App\Services\VisitRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\App;
@@ -13,7 +14,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CvController extends Controller
 {
-    public function download(Request $request, string $slug): Response|StreamedResponse
+    public function download(Request $request, string $slug, VisitRecorder $visits): Response|StreamedResponse
     {
         $locale = Portfolio::resolveLocale($request->query('lang'));
 
@@ -23,6 +24,8 @@ class CvController extends Controller
         $cv = $portfolio->cv ?? $portfolio->cvs()->first();
 
         abort_if($cv === null, 404);
+
+        $visits->record($request, 'cv_download', slug: $portfolio->slug, locale: $portfolio->locale, referer: $request->headers->get('referer'));
 
         App::setLocale($portfolio->locale);
 
