@@ -204,5 +204,7 @@
     "Duplicate CV": "Önéletrajz duplikálása",
     "The copy gets its own content, so editing it never touches the original.": "A másolat saját tartalmat kap, így a szerkesztése soha nem érinti az eredetit.",
     "CV duplicated": "Önéletrajz duplikálva",
-    "(copy)": "(másolat)"
+    "(copy)": "(másolat)",
+    "Download": "Letöltés",
+    "Could not build the PDF": "A PDF nem készült el"
 }

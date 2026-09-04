@@ -212,6 +212,31 @@ class CvTest extends TestCase
         $this->assertDatabaseHas('cvs', ['label' => 'From The Table']);
     }
 
+    public function test_the_download_action_serves_the_pdf_and_builds_it_when_missing(): void
+    {
+        $this->actingAs(User::first());
+
+        $cv = Cv::first();
+        $cv->forceFill(['cv_path' => null])->saveQuietly();
+
+        Livewire::test(EditCv::class, ['record' => $cv->getRouteKey()])
+            ->callAction('downloadCv')
+            ->assertFileDownloaded($cv->fresh()->downloadFilename());
+
+        $this->assertNotNull($cv->fresh()->cv_path);
+    }
+
+    public function test_the_download_filename_is_built_from_the_cv_name(): void
+    {
+        $cv = Cv::first();
+
+        $cv->forceFill(['full_name' => 'Tormá Levente'])->saveQuietly();
+        $this->assertSame('Torma_Levente_CV.pdf', $cv->fresh()->downloadFilename());
+
+        $cv->forceFill(['full_name' => null])->saveQuietly();
+        $this->assertSame('cv_CV.pdf', $cv->fresh()->downloadFilename());
+    }
+
     public function test_deleting_a_cv_cascades_to_its_own_content(): void
     {
         $cv = Cv::first();
