@@ -76,7 +76,7 @@
 
     @if ($profile->footer_text)
         <footer class="site-footer">
-            <div class="shell">{{ $profile->footer_text }}</div>
+            <div class="shell rich">{!! str($profile->footer_text)->sanitizeHtml() !!}</div>
         </footer>
     @endif
 

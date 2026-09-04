@@ -5,8 +5,12 @@ namespace Tests\Feature;
 use App\Enums\ProjectType;
 use App\Filament\Resources\Portfolios\Pages\EditPortfolio;
 use App\Models\Cv;
+use App\Models\Education;
 use App\Models\Portfolio;
+use App\Models\Project;
+use App\Models\Skill;
 use App\Models\User;
+use App\Models\WorkExperience;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -106,6 +110,25 @@ class PortfolioTest extends TestCase
         $this->assertSame($sideBefore, $portfolio->projects()->where('type', ProjectType::SideProject)->count());
     }
 
+    public function test_saving_the_portfolio_form_keeps_the_experience_highlights(): void
+    {
+        $this->actingAs(User::first());
+
+        $portfolio = Portfolio::default('hu');
+        $before = $portfolio->experience_highlights;
+
+        $this->assertNotEmpty($before);
+
+        // A `simple()` repeater hands its child field the whole row as state,
+        // which silently blanked every highlight when that child was a rich
+        // editor. Saving an untouched form must be a no-op.
+        Livewire::test(EditPortfolio::class, ['record' => $portfolio->getRouteKey()])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame($before, $portfolio->fresh()->experience_highlights);
+    }
+
     public function test_deleting_a_portfolio_cascades_to_its_dependents(): void
     {
         $portfolio = Portfolio::default('hu');
@@ -114,10 +137,10 @@ class PortfolioTest extends TestCase
         $portfolio->delete();
 
         $this->assertDatabaseMissing('cvs', ['id' => $cv->id]);
-        $this->assertSame(0, \App\Models\Project::where('portfolio_id', $portfolio->id)->count());
-        $this->assertSame(0, \App\Models\Skill::where('portfolio_id', $portfolio->id)->count());
-        $this->assertSame(0, \App\Models\WorkExperience::where('cv_id', $cv->id)->count());
-        $this->assertSame(0, \App\Models\Education::where('cv_id', $cv->id)->count());
+        $this->assertSame(0, Project::where('portfolio_id', $portfolio->id)->count());
+        $this->assertSame(0, Skill::where('portfolio_id', $portfolio->id)->count());
+        $this->assertSame(0, WorkExperience::where('cv_id', $cv->id)->count());
+        $this->assertSame(0, Education::where('cv_id', $cv->id)->count());
     }
 
     public function test_single_default_per_locale_is_enforced(): void

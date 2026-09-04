@@ -8,9 +8,9 @@
                 </h2>
             @endif
             @if ($profile->contact_intro ?? false)
-                <p class="text-muted mt-4">
-                    {{ $profile->contact_intro }}
-                </p>
+                <div class="rich text-muted mt-4">
+                    {!! str($profile->contact_intro)->sanitizeHtml() !!}
+                </div>
             @endif
 
             <ul class="contact-list mt-6">
@@ -44,10 +44,10 @@
                         </a>
                     </li>
                 @endif
-                @if ($profile->cv)
+                @if ($cvDownloadUrl = $profile->cvDownloadUrl())
                     <li>
                         <span class="label">CV</span>
-                        <a class="text-link" href="{{ route('cv.download', ['slug' => $profile->slug, 'lang' => $profile->locale]) }}" target="_blank" rel="noopener noreferrer">
+                        <a class="text-link" href="{{ $cvDownloadUrl }}" target="_blank" rel="noopener noreferrer">
                             {{ __('Download resume') }}
                         </a>
                     </li>

@@ -9,6 +9,7 @@ use App\Services\ImageOptimizer;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
@@ -26,6 +27,12 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class PortfolioForm
 {
+    /**
+     * Free-text columns are varchar(500); mirror that in the form so a value is
+     * rejected with a message rather than truncated on the way into the column.
+     */
+    private const TEXT_LIMIT = 500;
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -37,6 +44,7 @@ class PortfolioForm
                                 TextInput::make('label')
                                     ->label(__('Label'))
                                     ->required()
+                                    ->maxLength(self::TEXT_LIMIT)
                                     ->helperText(__('Admin-only name, e.g. "Full-stack" or "Java Junior".')),
                                 Select::make('locale')
                                     ->label(__('Language'))
@@ -46,6 +54,7 @@ class PortfolioForm
                                 TextInput::make('slug')
                                     ->label(__('Slug'))
                                     ->required()
+                                    ->maxLength(200)
                                     ->helperText(__('Used in the URL: /{slug}'))
                                     ->unique(
                                         ignoreRecord: true,
@@ -68,15 +77,22 @@ class PortfolioForm
 
                         Tab::make(__('Hero'))
                             ->schema([
-                                TextInput::make('full_name')->label(__('Full name'))->required(),
-                                TextInput::make('role')->label(__('Role'))->required(),
-                                TextInput::make('tagline')->label(__('Tagline'))->required()->columnSpanFull(),
-                                TextInput::make('hero_eyebrow')->label(__('Hero eyebrow')),
-                                TextInput::make('location')->label(__('Location'))->required(),
-                                TextInput::make('phone')->label(__('Phone')),
-                                TextInput::make('portfolio_url')->label(__('Portfolio URL'))->url(),
+                                TextInput::make('full_name')->label(__('Full name'))->required()->maxLength(self::TEXT_LIMIT),
+                                TextInput::make('role')->label(__('Role'))->required()->maxLength(self::TEXT_LIMIT),
+                                Textarea::make('tagline')
+                                    ->label(__('Tagline'))
+                                    ->required()
+                                    ->rows(3)
+                                    ->autosize()
+                                    ->maxLength(self::TEXT_LIMIT)
+                                    ->helperText(__('Plain text: it is also used as the page\'s meta description.'))
+                                    ->columnSpanFull(),
+                                TextInput::make('hero_eyebrow')->label(__('Hero eyebrow'))->maxLength(self::TEXT_LIMIT),
+                                TextInput::make('location')->label(__('Location'))->required()->maxLength(self::TEXT_LIMIT),
+                                TextInput::make('phone')->label(__('Phone'))->maxLength(self::TEXT_LIMIT),
+                                TextInput::make('portfolio_url')->label(__('Portfolio URL'))->url()->maxLength(self::TEXT_LIMIT),
                                 Toggle::make('available')->label(__('Available')),
-                                TextInput::make('available_text')->label(__('Available text'))->placeholder(__('Open to work')),
+                                TextInput::make('available_text')->label(__('Available text'))->placeholder(__('Open to work'))->maxLength(self::TEXT_LIMIT),
                                 FileUpload::make('avatar_path')
                                     ->label(__('Avatar'))
                                     ->image()
@@ -95,8 +111,10 @@ class PortfolioForm
 
                         Tab::make(__('Projects'))
                             ->schema([
-                                TextInput::make('projects_heading')->label(__('Projects heading'))->columnSpanFull(),
-                                TextInput::make('projects_subheading')->label(__('Projects subheading'))->columnSpanFull(),
+                                TextInput::make('projects_heading')->label(__('Projects heading'))->maxLength(self::TEXT_LIMIT)->columnSpanFull(),
+                                self::richText(RichEditor::make('projects_subheading'))
+                                    ->label(__('Projects subheading'))
+                                    ->columnSpanFull(),
                                 Repeater::make('selectedProjects')
                                     ->label(__('Selected projects'))
                                     ->relationship(
@@ -105,14 +123,14 @@ class PortfolioForm
                                     )
                                     ->schema([
                                         Hidden::make('type')->default(ProjectType::Selected->value),
-                                        TextInput::make('title')->label(__('Title'))->required(),
+                                        TextInput::make('title')->label(__('Title'))->required()->maxLength(self::TEXT_LIMIT),
                                         Toggle::make('featured')->label(__('Featured')),
-                                        TextInput::make('summary')->label(__('Summary'))->required()->columnSpanFull(),
-                                        TextInput::make('problem')->label(__('Problem'))->columnSpanFull(),
-                                        TextInput::make('role_description')->label(__('Role description'))->columnSpanFull(),
-                                        TextInput::make('outcome')->label(__('Outcome'))->columnSpanFull(),
+                                        self::richText(RichEditor::make('summary'))->label(__('Summary'))->required()->columnSpanFull(),
+                                        self::richText(RichEditor::make('problem'))->label(__('Problem'))->columnSpanFull(),
+                                        self::richText(RichEditor::make('role_description'))->label(__('Role description'))->columnSpanFull(),
+                                        self::richText(RichEditor::make('outcome'))->label(__('Outcome'))->columnSpanFull(),
                                         TagsInput::make('stack')->label(__('Stack'))->placeholder(__('Add technology'))->columnSpanFull(),
-                                        TextInput::make('url')->label(__('Link'))->url()->columnSpanFull(),
+                                        TextInput::make('url')->label(__('Link'))->url()->maxLength(self::TEXT_LIMIT)->columnSpanFull(),
                                     ])
                                     ->orderColumn('sort_order')
                                     ->reorderableWithButtons()
@@ -124,8 +142,10 @@ class PortfolioForm
 
                         Tab::make(__('Experiments'))
                             ->schema([
-                                TextInput::make('experiments_heading')->label(__('Experiments heading'))->columnSpanFull(),
-                                Textarea::make('experiments_intro')->label(__('Experiments intro'))->rows(3)->columnSpanFull(),
+                                TextInput::make('experiments_heading')->label(__('Experiments heading'))->maxLength(self::TEXT_LIMIT)->columnSpanFull(),
+                                self::richText(RichEditor::make('experiments_intro'))
+                                    ->label(__('Experiments intro'))
+                                    ->columnSpanFull(),
                                 Repeater::make('sideProjects')
                                     ->label(__('Side projects'))
                                     ->relationship(
@@ -134,10 +154,10 @@ class PortfolioForm
                                     )
                                     ->schema([
                                         Hidden::make('type')->default(ProjectType::SideProject->value),
-                                        TextInput::make('title')->label(__('Title'))->required(),
-                                        TextInput::make('summary')->label(__('Summary'))->required()->columnSpanFull(),
+                                        TextInput::make('title')->label(__('Title'))->required()->maxLength(self::TEXT_LIMIT),
+                                        self::richText(RichEditor::make('summary'))->label(__('Summary'))->required()->columnSpanFull(),
                                         TagsInput::make('stack')->label(__('Stack'))->placeholder(__('Add technology'))->columnSpanFull(),
-                                        TextInput::make('url')->label(__('Link'))->url()->columnSpanFull(),
+                                        TextInput::make('url')->label(__('Link'))->url()->maxLength(self::TEXT_LIMIT)->columnSpanFull(),
                                     ])
                                     ->orderColumn('sort_order')
                                     ->reorderableWithButtons()
@@ -149,32 +169,21 @@ class PortfolioForm
 
                         Tab::make(__('About'))
                             ->schema([
-                                TextInput::make('about_heading')->label(__('About heading'))->columnSpanFull(),
-                                Textarea::make('about')->label(__('About'))->rows(5)->required()->columnSpanFull(),
+                                TextInput::make('about_heading')->label(__('About heading'))->maxLength(self::TEXT_LIMIT)->columnSpanFull(),
+                                self::richText(RichEditor::make('about'))->label(__('About'))->required()->columnSpanFull(),
                                 Repeater::make('experience_highlights')
                                     ->label(__('Experience highlights'))
-                                    ->simple(TextInput::make('item')->label(__('Highlight')))
-                                    ->columnSpanFull(),
-                                Repeater::make('languages')
-                                    ->label(__('Languages'))
-                                    ->schema([
-                                        TextInput::make('name')->label(__('Language'))->required(),
-                                        Select::make('level')
-                                            ->label(__('Level'))
-                                            ->options([
-                                                'Native' => __('Native'),
-                                                'C2' => 'C2',
-                                                'C1' => 'C1',
-                                                'B2' => 'B2',
-                                                'B1' => 'B1',
-                                                'A2' => 'A2',
-                                                'A1' => 'A1',
-                                            ])
-                                            ->required(),
-                                    ])
-                                    ->reorderableWithButtons()
-                                    ->itemLabel(fn (array $state): ?string => filled($state['name'] ?? null) ? trim(($state['name'] ?? '').' — '.($state['level'] ?? '')) : null)
-                                    ->columns(2)
+                                    // Textarea rather than a rich editor: a
+                                    // `simple()` repeater hands its child the
+                                    // whole row as state, which the rich
+                                    // editor's TipTap cast cannot read.
+                                    ->simple(
+                                        Textarea::make('item')
+                                            ->label(__('Highlight'))
+                                            ->rows(2)
+                                            ->autosize()
+                                            ->maxLength(self::TEXT_LIMIT)
+                                    )
                                     ->columnSpanFull(),
                                 Repeater::make('skills')
                                     ->label(__('Skills'))
@@ -183,10 +192,10 @@ class PortfolioForm
                                         Select::make('group')
                                             ->label(__('Group'))
                                             ->options(collect(SkillGroup::cases())->mapWithKeys(
-                                                fn (SkillGroup $group): array => [$group->value => $group->label()]
+                                                fn (SkillGroup $group): array => [$group->value => __($group->label())]
                                             ))
                                             ->required(),
-                                        TextInput::make('name')->label(__('Skill name'))->required(),
+                                        TextInput::make('name')->label(__('Skill name'))->required()->maxLength(self::TEXT_LIMIT),
                                     ])
                                     ->orderColumn('sort_order')
                                     ->reorderableWithButtons()
@@ -196,20 +205,38 @@ class PortfolioForm
 
                         Tab::make(__('Contact'))
                             ->schema([
-                                TextInput::make('contact_heading')->label(__('Contact heading'))->columnSpanFull(),
-                                Textarea::make('contact_intro')->label(__('Contact intro'))->rows(3)->columnSpanFull(),
-                                TextInput::make('email')->label(__('Email'))->email()->required(),
-                                TextInput::make('linkedin_url')->label(__('LinkedIn URL'))->url(),
-                                TextInput::make('github_url')->label(__('GitHub URL'))->url(),
+                                TextInput::make('contact_heading')->label(__('Contact heading'))->maxLength(self::TEXT_LIMIT)->columnSpanFull(),
+                                self::richText(RichEditor::make('contact_intro'))
+                                    ->label(__('Contact intro'))
+                                    ->columnSpanFull(),
+                                TextInput::make('email')->label(__('Email'))->email()->required()->maxLength(self::TEXT_LIMIT),
+                                TextInput::make('linkedin_url')->label(__('LinkedIn URL'))->url()->maxLength(self::TEXT_LIMIT),
+                                TextInput::make('github_url')->label(__('GitHub URL'))->url()->maxLength(self::TEXT_LIMIT),
                             ])
                             ->columns(2),
 
                         Tab::make(__('Footer'))
                             ->schema([
-                                TextInput::make('footer_text')->label(__('Footer text'))->columnSpanFull(),
+                                self::richText(RichEditor::make('footer_text'))
+                                    ->label(__('Footer text'))
+                                    ->columnSpanFull(),
                             ]),
                     ])
                     ->columnSpanFull(),
             ]);
+    }
+
+    /**
+     * Bold, italic and links only. The page's own typography owns everything
+     * else, so a full editor would just let the two fight.
+     *
+     * @template TField of RichEditor
+     *
+     * @param  TField  $field
+     * @return TField
+     */
+    protected static function richText(RichEditor $field): RichEditor
+    {
+        return $field->toolbarButtons([['bold', 'italic', 'link'], ['undo', 'redo']]);
     }
 }

@@ -7,7 +7,7 @@
                     {{ $profile->about_heading }}
                 </h2>
             @endif
-            <p class="text-muted mt-5">{{ $profile->about }}</p>
+            <div class="rich text-muted mt-5">{!! str($profile->about)->sanitizeHtml() !!}</div>
         </article>
 
         <article class="card reveal">

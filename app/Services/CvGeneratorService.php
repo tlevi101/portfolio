@@ -2,96 +2,187 @@
 
 namespace App\Services;
 
-use App\Enums\ProjectType;
 use App\Models\Cv;
+use App\Models\CvProject;
+use App\Models\CvSkill;
 use App\Models\Education;
-use App\Models\Project;
-use App\Models\Skill;
 use App\Models\WorkExperience;
-use Barryvdh\DomPDF\Facade\Pdf;
 use chillerlan\QRCode\Output\QROutputInterface;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
+use HeadlessChromium\Browser;
+use HeadlessChromium\BrowserFactory;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 
 class CvGeneratorService
 {
     /**
-     * Render and store the PDF for a specific CV, inheriting identity, skills
-     * and selected projects from its portfolio and using its own work
-     * experience and education entries.
+     * Data-URI cache for the current request, so the admin live preview does not
+     * re-read and re-encode the same avatar on every keystroke.
+     *
+     * @var array<string, string|null>
+     */
+    private array $dataUriCache = [];
+
+    /**
+     * Render the CV to a PDF and store it on the public disk.
      */
     public function generateFor(Cv $cv): string
     {
-        $portfolio = $cv->portfolio;
+        $pdf = $this->htmlToPdf($this->renderHtml($cv));
 
-        if ($portfolio === null) {
-            throw new \RuntimeException("CV #{$cv->id} has no linked portfolio.");
-        }
+        $path = "cv/{$cv->id}-{$cv->locale}.pdf";
 
-        /** @var Collection<int, WorkExperience> $workExperiences */
-        $workExperiences = $cv->workExperiences()->orderBy('sort_order')->get();
-
-        /** @var Collection<int, Education> $educations */
-        $educations = $cv->education()->orderBy('sort_order')->get();
-
-        /** @var Collection<int, Skill> $skills */
-        $skills = $portfolio->skills()->orderBy('sort_order')->get();
-
-        $skillsByGroup = $skills->groupBy(fn (Skill $s): string => $s->group->value);
-
-        /** @var Collection<int, Project> $selectedProjects */
-        $selectedProjects = $portfolio->projects()
-            ->where('type', ProjectType::Selected)
-            ->orderByDesc('featured')
-            ->orderBy('sort_order')
-            ->get();
-
-        $options = new QROptions([
-            'outputType' => QROutputInterface::GDIMAGE_PNG,
-            'outputBase64' => true,
-            'scale' => 6,
-            'imageTransparent' => false,
-        ]);
-        $qrTarget = $portfolio->portfolio_url ?: route('portfolio.show', $portfolio->slug);
-        $qr = (new QRCode($options))->render($qrTarget);
-
-        $avatar = null;
-        if ($portfolio->avatar_path && Storage::disk('public')->exists($portfolio->avatar_path)) {
-            $mime = 'image/jpeg';
-            $ext = strtolower(pathinfo($portfolio->avatar_path, PATHINFO_EXTENSION));
-            if ($ext === 'png') {
-                $mime = 'image/png';
-            } elseif ($ext === 'webp') {
-                $mime = 'image/webp';
-            }
-            $avatar = 'data:'.$mime.';base64,'.base64_encode(
-                (string) Storage::disk('public')->get($portfolio->avatar_path)
-            );
-        }
-
-        App::setLocale($cv->locale ?: $portfolio->locale);
-
-        $html = view('cv.template', [
-            'profile' => $portfolio,
-            'workExperiences' => $workExperiences,
-            'educations' => $educations,
-            'skillsByGroup' => $skillsByGroup,
-            'selectedProjects' => $selectedProjects,
-            'qr' => $qr,
-            'avatar' => $avatar,
-        ])->render();
-
-        $pdf = Pdf::loadHTML($html)->setPaper('a4', 'portrait');
-
-        $path = "cv/{$portfolio->slug}-{$portfolio->locale}.pdf";
-
-        Storage::disk('public')->put($path, $pdf->output());
+        Storage::disk('public')->put($path, $pdf);
 
         $cv->updateQuietly(['cv_path' => $path]);
 
         return $path;
+    }
+
+    /**
+     * The CV as a standalone HTML document. Also used by the admin live preview,
+     * which renders it straight into an iframe — the PDF and the preview are
+     * therefore always the same markup.
+     */
+    public function renderHtml(Cv $cv): string
+    {
+        App::setLocale($cv->locale ?: config('app.locale'));
+
+        return view('cv.template', $this->viewData($cv))->render();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function viewData(Cv $cv): array
+    {
+        $portfolioUrl = $cv->portfolioUrl();
+
+        return [
+            'cv' => $cv,
+            'workExperiences' => $this->ordered($cv->workExperiences),
+            'educations' => $this->ordered($cv->education),
+            'skillsByGroup' => $this->ordered($cv->skills)
+                ->groupBy(fn (CvSkill $skill): string => $skill->group->value),
+            'projects' => $this->ordered($cv->projects),
+            'stackHighlights' => collect($cv->stack_highlights ?? [])->filter()->values(),
+            'languages' => collect($cv->languages ?? [])->filter(fn (array $language): bool => filled($language['name'] ?? null)),
+            'portfolioUrl' => $portfolioUrl,
+            'qr' => $portfolioUrl !== null ? $this->qrDataUri($portfolioUrl) : null,
+            'avatar' => $this->avatarDataUri($cv->avatar_path),
+        ];
+    }
+
+    /**
+     * Sort in PHP rather than SQL: the live preview hands us unsaved in-memory
+     * collections built from the form state, which have no query to order.
+     *
+     * @template TModel of WorkExperience|Education|CvSkill|CvProject
+     *
+     * @param  Collection<int, TModel>  $records
+     * @return Collection<int, TModel>
+     */
+    protected function ordered(Collection $records): Collection
+    {
+        return $records->sortBy(fn ($record): int => (int) $record->sort_order)->values();
+    }
+
+    protected function qrDataUri(string $target): string
+    {
+        return (new QRCode(new QROptions([
+            'outputType' => QROutputInterface::GDIMAGE_PNG,
+            'outputBase64' => true,
+            'scale' => 6,
+            'imageTransparent' => false,
+        ])))->render($target);
+    }
+
+    /**
+     * Chrome renders from a `Page.setDocumentContent` string, which has no base
+     * URL to resolve relative asset paths against, so images must be inlined.
+     */
+    protected function avatarDataUri(?string $path): ?string
+    {
+        if (blank($path)) {
+            return null;
+        }
+
+        if (array_key_exists($path, $this->dataUriCache)) {
+            return $this->dataUriCache[$path];
+        }
+
+        $disk = Storage::disk('public');
+
+        if (! $disk->exists($path)) {
+            return $this->dataUriCache[$path] = null;
+        }
+
+        $mime = match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            default => 'image/jpeg',
+        };
+
+        return $this->dataUriCache[$path] = 'data:'.$mime.';base64,'.base64_encode((string) $disk->get($path));
+    }
+
+    /**
+     * Print the document with headless Chrome.
+     *
+     * The page size and margins come from the stylesheet's `@page` rule
+     * (`preferCSSPageSize`), and header/footer printing is off, so Chrome adds
+     * no URL or page-number chrome of its own to the sheet.
+     */
+    protected function htmlToPdf(string $html): string
+    {
+        $timeout = (int) config('cv.chrome_timeout');
+
+        $browser = $this->launchBrowser();
+
+        try {
+            $page = $browser->createPage();
+            $page->setHtml($html, $timeout);
+
+            return $page->pdf([
+                'printBackground' => true,
+                'displayHeaderFooter' => false,
+                'preferCSSPageSize' => true,
+                'marginTop' => 0,
+                'marginBottom' => 0,
+                'marginLeft' => 0,
+                'marginRight' => 0,
+            ])->getRawBinary($timeout);
+        } finally {
+            $browser->close();
+        }
+    }
+
+    protected function launchBrowser(): Browser
+    {
+        $binary = (string) config('cv.chrome_binary');
+
+        if (! is_executable($binary)) {
+            throw new RuntimeException(
+                "Chrome was not found at [{$binary}]. Install google-chrome-stable (or chromium) ".
+                'on this host, or point CHROME_BINARY at the executable.'
+            );
+        }
+
+        return (new BrowserFactory($binary))->createBrowser([
+            'headless' => true,
+            // php-fpm and the queue worker run unprivileged in a container where
+            // Chrome's sandbox is unavailable; /dev/shm is small there too.
+            'noSandbox' => true,
+            'startupTimeout' => (int) ceil(config('cv.chrome_timeout') / 1000),
+            'customFlags' => [
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--font-render-hinting=none',
+            ],
+        ]);
     }
 }

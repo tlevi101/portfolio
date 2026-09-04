@@ -27,14 +27,14 @@ class CvController extends Controller
 
         $visits->record($request, 'cv_download', slug: $portfolio->slug, locale: $portfolio->locale, referer: $request->headers->get('referer'));
 
-        App::setLocale($portfolio->locale);
+        App::setLocale($cv->locale ?: $portfolio->locale);
 
         if (! $cv->cv_path || ! Storage::disk('public')->exists($cv->cv_path)) {
             app(CvGeneratorService::class)->generateFor($cv);
             $cv->refresh();
         }
 
-        $name = Str::of((string) $portfolio->full_name)
+        $name = Str::of((string) ($cv->full_name ?: $portfolio->full_name))
             ->ascii()
             ->replaceMatches('/[^A-Za-z0-9]+/', '_')
             ->trim('_')
@@ -47,7 +47,12 @@ class CvController extends Controller
             $filename,
             [
                 'Content-Type' => 'application/pdf',
-                'Cache-Control' => 'no-store, max-age=0',
+                // Belt and braces against phone browsers and download managers
+                // holding on to an older build; the `v` parameter on the link
+                // (Portfolio::cvDownloadUrl) is what actually forces a refetch.
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma' => 'no-cache',
+                'Expires' => '0',
             ]
         );
     }

@@ -10,7 +10,7 @@
                 @foreach ($profile->experience_highlights as $highlight)
                     <li class="flex gap-4 text-muted pb-4 border-b border-rule">
                         <span class="text-primary shrink-0">—</span>
-                        {{ $highlight }}
+                        <span class="whitespace-pre-line">{{ $highlight }}</span>
                     </li>
                 @endforeach
             </ul>

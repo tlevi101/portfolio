@@ -3,17 +3,26 @@
 namespace App\Models;
 
 use App\Enums\SkillGroup;
+use App\Observers\CvDependencyObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * @property int|null $portfolio_id
+ * A skill printed on the CV. Separate from Skill, which belongs to the site.
+ *
+ * @property int|null $cv_id
  * @property SkillGroup $group
+ * @property string $name
+ * @property int $sort_order
  */
-class Skill extends Model
+#[ObservedBy(CvDependencyObserver::class)]
+class CvSkill extends Model
 {
+    protected $table = 'cv_skills';
+
     protected $fillable = [
-        'portfolio_id',
+        'cv_id',
         'group',
         'name',
         'sort_order',
@@ -31,10 +40,10 @@ class Skill extends Model
     }
 
     /**
-     * @return BelongsTo<Portfolio, $this>
+     * @return BelongsTo<Cv, $this>
      */
-    public function portfolio(): BelongsTo
+    public function cv(): BelongsTo
     {
-        return $this->belongsTo(Portfolio::class);
+        return $this->belongsTo(Cv::class);
     }
 }
