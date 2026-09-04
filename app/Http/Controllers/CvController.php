@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CvController extends Controller
@@ -34,17 +33,9 @@ class CvController extends Controller
             $cv->refresh();
         }
 
-        $name = Str::of((string) ($cv->full_name ?: $portfolio->full_name))
-            ->ascii()
-            ->replaceMatches('/[^A-Za-z0-9]+/', '_')
-            ->trim('_')
-            ->toString();
-
-        $filename = ($name !== '' ? $name : 'cv').'_CV.pdf';
-
         return Storage::disk('public')->response(
             (string) $cv->cv_path,
-            $filename,
+            $cv->downloadFilename(),
             [
                 'Content-Type' => 'application/pdf',
                 // Belt and braces against phone browsers and download managers

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Cvs\Pages;
 
 use App\Filament\Concerns\InteractsWithCvPreview;
+use App\Filament\Resources\Cvs\Actions\DownloadCvAction;
 use App\Filament\Resources\Cvs\Actions\DuplicateCvAction;
 use App\Filament\Resources\Cvs\CvResource;
 use App\Models\Cv;
@@ -15,6 +16,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\View\View;
+use Throwable;
 
 /**
  * @extends EditRecord<Cv>
@@ -44,11 +46,25 @@ class EditCv extends EditRecord
                 ->modalContent(fn (): View => view('filament.cv.preview-modal', [
                     'url' => $this->getCvPreviewUrl(),
                 ])),
+            DownloadCvAction::make(),
             Action::make('regenerateCv')
                 ->label(__('Regenerate CV'))
                 ->icon(Heroicon::OutlinedArrowPath)
                 ->action(function (): void {
-                    app(CvGeneratorService::class)->generateFor($this->getRecord());
+                    try {
+                        app(CvGeneratorService::class)->generateFor($this->getRecord());
+                    } catch (Throwable $e) {
+                        // Rendering needs a working headless Chrome; surface why
+                        // it is unhappy instead of throwing a 500 at the admin.
+                        Notification::make()
+                            ->title(__('Could not build the PDF'))
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->persistent()
+                            ->send();
+
+                        return;
+                    }
 
                     Notification::make()
                         ->title(__('CV regenerated'))

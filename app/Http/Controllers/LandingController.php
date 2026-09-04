@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ProjectType;
+use App\Enums\SkillGroup;
 use App\Models\Portfolio;
 use App\Models\Skill;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
 
 class LandingController extends Controller
@@ -43,11 +45,12 @@ class LandingController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        /** @var \Illuminate\Support\Collection<string, \Illuminate\Support\Collection<int, \App\Models\Skill>> $skills */
+        /** @var Collection<string, Collection<int, Skill>> $skills */
         $skills = $portfolio->skills()
             ->orderBy('sort_order')
             ->get()
-            ->groupBy(fn (Skill $skill): string => $skill->group->value);
+            ->groupBy(fn (Skill $skill): string => $skill->group->value)
+            ->sortBy(fn (Collection $groupSkills, string $group): int => SkillGroup::from($group)->sortIndex());
 
         return view('landing', [
             'profile' => $portfolio,

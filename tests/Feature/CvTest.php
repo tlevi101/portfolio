@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Enums\SkillGroup;
 use App\Filament\Resources\Cvs\Pages\EditCv;
 use App\Filament\Resources\Cvs\Pages\ListCvs;
 use App\Models\Cv;
+use App\Models\CvSkill;
 use App\Models\Portfolio;
 use App\Models\User;
 use App\Services\CvGeneratorService;
@@ -129,6 +131,32 @@ class CvTest extends TestCase
         $this->assertNotSame('Unsaved Name', $cv->fresh()->full_name);
     }
 
+    public function test_the_live_preview_includes_the_skills(): void
+    {
+        $this->actingAs(User::first());
+
+        $cv = Cv::first();
+        $skill = $cv->skills()->where('group', SkillGroup::Backend->value)->firstOrFail();
+
+        $component = Livewire::test(EditCv::class, ['record' => $cv->getRouteKey()]);
+
+        // Skills are edited as one repeater per group, so the preview has to
+        // gather them from every group's own state rather than a `skills` key.
+        $this->assertStringContainsString(
+            $skill->name,
+            (string) Cache::get($component->instance()->getCvPreviewCacheKey()),
+        );
+
+        // And an unsaved rename must reach it too.
+        $key = array_key_first($component->get('data.skillsBackend'));
+        $component->set("data.skillsBackend.{$key}.name", 'Unsaved Skill');
+
+        $html = (string) Cache::get($component->instance()->getCvPreviewCacheKey());
+
+        $this->assertStringContainsString('Unsaved Skill', $html);
+        $this->assertNotSame('Unsaved Skill', $skill->fresh()->name);
+    }
+
     public function test_the_preview_endpoint_is_not_public(): void
     {
         $this->get('/admin/cv-preview/anything')->assertRedirect();
@@ -210,6 +238,77 @@ class CvTest extends TestCase
 
         $this->assertSame($before + 1, Cv::count());
         $this->assertDatabaseHas('cvs', ['label' => 'From The Table']);
+    }
+
+    public function test_the_download_action_serves_the_pdf_and_builds_it_when_missing(): void
+    {
+        $this->actingAs(User::first());
+
+        $cv = Cv::first();
+        $cv->forceFill(['cv_path' => null])->saveQuietly();
+
+        Livewire::test(EditCv::class, ['record' => $cv->getRouteKey()])
+            ->callAction('downloadCv')
+            ->assertFileDownloaded($cv->fresh()->downloadFilename());
+
+        $this->assertNotNull($cv->fresh()->cv_path);
+    }
+
+    public function test_the_download_filename_is_built_from_the_cv_name(): void
+    {
+        $cv = Cv::first();
+
+        $cv->forceFill(['full_name' => 'Tormá Levente'])->saveQuietly();
+        $this->assertSame('Torma_Levente_CV.pdf', $cv->fresh()->downloadFilename());
+
+        $cv->forceFill(['full_name' => null])->saveQuietly();
+        $this->assertSame('cv_CV.pdf', $cv->fresh()->downloadFilename());
+    }
+
+    public function test_saving_the_cv_form_keeps_every_skill_group(): void
+    {
+        $this->actingAs(User::first());
+
+        $cv = Cv::first();
+
+        $before = $cv->skills()
+            ->get()
+            ->groupBy(fn (CvSkill $skill): string => $skill->group->value)
+            ->map->count()
+            ->all();
+
+        $this->assertGreaterThan(1, count($before), 'needs more than one group to be meaningful');
+
+        // Each group is its own repeater over the same relation; saving must not
+        // let one of them delete the rows belonging to the others.
+        Livewire::test(EditCv::class, ['record' => $cv->getRouteKey()])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $after = $cv->skills()
+            ->get()
+            ->groupBy(fn (CvSkill $skill): string => $skill->group->value)
+            ->map->count()
+            ->all();
+
+        $this->assertSame($before, $after);
+    }
+
+    public function test_the_cv_renders_skill_groups_in_enum_order(): void
+    {
+        $cv = Portfolio::default('hu')->cv;
+
+        // Per-group repeaters restart sort_order at zero, so the group order has
+        // to come from the enum rather than from the rows.
+        $cv->skills()->delete();
+        $cv->skills()->create(['group' => SkillGroup::Other->value, 'name' => 'Zed', 'sort_order' => 0]);
+        $cv->skills()->create(['group' => SkillGroup::Backend->value, 'name' => 'Alpha', 'sort_order' => 0]);
+        $cv->skills()->create(['group' => SkillGroup::Frontend->value, 'name' => 'Mid', 'sort_order' => 0]);
+
+        $html = app(CvGeneratorService::class)->renderHtml($cv->refresh());
+
+        $this->assertLessThan(strpos($html, 'Mid'), strpos($html, 'Alpha'));
+        $this->assertLessThan(strpos($html, 'Zed'), strpos($html, 'Mid'));
     }
 
     public function test_deleting_a_cv_cascades_to_its_own_content(): void

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\SkillGroup;
 use App\Models\Cv;
 use App\Models\CvProject;
 use App\Models\CvSkill;
@@ -67,7 +68,8 @@ class CvGeneratorService
             'workExperiences' => $this->ordered($cv->workExperiences),
             'educations' => $this->ordered($cv->education),
             'skillsByGroup' => $this->ordered($cv->skills)
-                ->groupBy(fn (CvSkill $skill): string => $skill->group->value),
+                ->groupBy(fn (CvSkill $skill): string => $skill->group->value)
+                ->sortBy(fn (Collection $skills, string $group): int => SkillGroup::from($group)->sortIndex()),
             'projects' => $this->ordered($cv->projects),
             'stackHighlights' => collect($cv->stack_highlights ?? [])->filter()->values(),
             'languages' => collect($cv->languages ?? [])->filter(fn (array $language): bool => filled($language['name'] ?? null)),
@@ -178,11 +180,37 @@ class CvGeneratorService
             // Chrome's sandbox is unavailable; /dev/shm is small there too.
             'noSandbox' => true,
             'startupTimeout' => (int) ceil(config('cv.chrome_timeout') / 1000),
+            'envVariables' => ['HOME' => $this->chromeHome()],
             'customFlags' => [
                 '--disable-dev-shm-usage',
                 '--disable-gpu',
                 '--font-render-hinting=none',
             ],
         ]);
+    }
+
+    /**
+     * A writable home directory for the Chrome subprocess.
+     *
+     * Chrome's crash handler sets itself up from $HOME before it ever looks at
+     * --user-data-dir, and php-fpm runs as a user whose home (/var/www) is not
+     * writable — where Chrome dies on startup with
+     * "chrome_crashpad_handler: --database is required". Neither
+     * --disable-crash-reporter nor --crash-dumps-dir avoids it; only a writable
+     * HOME does.
+     */
+    protected function chromeHome(): string
+    {
+        $path = storage_path('framework/chrome');
+
+        if (! is_dir($path)) {
+            @mkdir($path, 0775, true);
+            // mkdir's mode is masked by the creating process's umask, and the
+            // CLI and php-fpm do not share one; set it explicitly so whichever
+            // gets there first leaves a directory the other can write.
+            @chmod($path, 0775);
+        }
+
+        return is_writable($path) ? $path : sys_get_temp_dir();
     }
 }

@@ -129,6 +129,33 @@ class PortfolioTest extends TestCase
         $this->assertSame($before, $portfolio->fresh()->experience_highlights);
     }
 
+    public function test_saving_the_portfolio_form_keeps_every_skill_group(): void
+    {
+        $this->actingAs(User::first());
+
+        $portfolio = Portfolio::default('hu');
+
+        $before = $portfolio->skills()
+            ->get()
+            ->groupBy(fn (Skill $skill): string => $skill->group->value)
+            ->map->count()
+            ->all();
+
+        $this->assertGreaterThan(1, count($before), 'needs more than one group to be meaningful');
+
+        Livewire::test(EditPortfolio::class, ['record' => $portfolio->getRouteKey()])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $after = $portfolio->skills()
+            ->get()
+            ->groupBy(fn (Skill $skill): string => $skill->group->value)
+            ->map->count()
+            ->all();
+
+        $this->assertSame($before, $after);
+    }
+
     public function test_deleting_a_portfolio_cascades_to_its_dependents(): void
     {
         $portfolio = Portfolio::default('hu');

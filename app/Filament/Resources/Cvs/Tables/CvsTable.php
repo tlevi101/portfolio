@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Cvs\Tables;
 
+use App\Filament\Resources\Cvs\Actions\DownloadCvAction;
 use App\Filament\Resources\Cvs\Actions\DuplicateCvAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -29,9 +30,12 @@ class CvsTable
                 TextColumn::make('work_experiences_count')->label(__('Work experience'))->counts('workExperiences'),
                 TextColumn::make('education_count')->label(__('Education'))->counts('education'),
             ])
+            // Icon buttons: three labelled actions overflow the row once the
+            // count columns are in place.
             ->recordActions([
-                EditAction::make(),
-                DuplicateCvAction::make(),
+                EditAction::make()->iconButton(),
+                DownloadCvAction::make()->iconButton(),
+                DuplicateCvAction::make()->iconButton(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

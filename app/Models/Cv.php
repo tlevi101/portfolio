@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * A printable CV. It owns all of its content: the portfolio link only decides
@@ -163,6 +164,22 @@ class Cv extends Model
                 $clone->save();
             }
         }
+    }
+
+    /**
+     * What the downloaded PDF is called on the reader's disk. Derived from the
+     * CV's own name so a recruiter ends up with "Torma_Levente_CV.pdf" rather
+     * than an opaque id.
+     */
+    public function downloadFilename(): string
+    {
+        $name = Str::of((string) $this->full_name)
+            ->ascii()
+            ->replaceMatches('/[^A-Za-z0-9]+/', '_')
+            ->trim('_')
+            ->toString();
+
+        return ($name !== '' ? $name : 'cv').'_CV.pdf';
     }
 
     /**
