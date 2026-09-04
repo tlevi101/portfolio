@@ -198,17 +198,26 @@ class CvGeneratorService
      * "chrome_crashpad_handler: --database is required". Neither
      * --disable-crash-reporter nor --crash-dumps-dir avoids it; only a writable
      * HOME does.
+     *
+     * The directory is per OS user because Chrome creates its dotfiles at 0700:
+     * a home shared between the CLI user and the web server user locks out
+     * whichever of them renders second.
      */
     protected function chromeHome(): string
     {
-        $path = storage_path('framework/chrome');
+        $base = storage_path('framework/chrome');
+        $path = $base.'/'.(function_exists('posix_geteuid') ? posix_geteuid() : 'shared');
 
-        if (! is_dir($path)) {
-            @mkdir($path, 0775, true);
+        foreach ([$base, $path] as $directory) {
+            if (is_dir($directory)) {
+                continue;
+            }
+
+            @mkdir($directory, 0775, true);
             // mkdir's mode is masked by the creating process's umask, and the
-            // CLI and php-fpm do not share one; set it explicitly so whichever
-            // gets there first leaves a directory the other can write.
-            @chmod($path, 0775);
+            // CLI and php-fpm do not share one; the base has to stay writable
+            // for both so each can create its own home under it.
+            @chmod($directory, 0775);
         }
 
         return is_writable($path) ? $path : sys_get_temp_dir();
