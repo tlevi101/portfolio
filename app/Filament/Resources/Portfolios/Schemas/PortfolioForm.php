@@ -185,22 +185,9 @@ class PortfolioForm
                                             ->maxLength(self::TEXT_LIMIT)
                                     )
                                     ->columnSpanFull(),
-                                Repeater::make('skills')
-                                    ->label(__('Skills'))
-                                    ->relationship()
-                                    ->schema([
-                                        Select::make('group')
-                                            ->label(__('Group'))
-                                            ->options(collect(SkillGroup::cases())->mapWithKeys(
-                                                fn (SkillGroup $group): array => [$group->value => __($group->label())]
-                                            ))
-                                            ->required(),
-                                        TextInput::make('name')->label(__('Skill name'))->required()->maxLength(self::TEXT_LIMIT),
-                                    ])
-                                    ->orderColumn('sort_order')
-                                    ->reorderableWithButtons()
-                                    ->columns(2)
-                                    ->columnSpanFull(),
+                                ...collect(SkillGroup::cases())
+                                    ->map(fn (SkillGroup $group): Repeater => self::skillGroupRepeater($group))
+                                    ->all(),
                             ]),
 
                         Tab::make(__('Contact'))
@@ -224,6 +211,34 @@ class PortfolioForm
                     ])
                     ->columnSpanFull(),
             ]);
+    }
+
+    /**
+     * One repeater per skill group, each scoped to its own slice of the
+     * relation, so a group can be added to and reordered on its own instead of
+     * everything sharing a single list with a group dropdown on every row.
+     */
+    protected static function skillGroupRepeater(SkillGroup $group): Repeater
+    {
+        return Repeater::make('skills'.$group->value)
+            ->label(__($group->label()))
+            ->relationship(
+                'skills',
+                modifyQueryUsing: fn (Builder $query): Builder => $query->where('group', $group->value),
+            )
+            ->schema([
+                Hidden::make('group')->default($group->value),
+                TextInput::make('name')
+                    ->hiddenLabel()
+                    ->placeholder(__('Skill name'))
+                    ->required()
+                    ->maxLength(self::TEXT_LIMIT),
+            ])
+            ->orderColumn('sort_order')
+            ->reorderableWithButtons()
+            ->addActionLabel(__('Add skill'))
+            ->grid(2)
+            ->columnSpanFull();
     }
 
     /**

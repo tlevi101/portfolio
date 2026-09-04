@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Enums\SkillGroup;
 use App\Filament\Resources\Cvs\Pages\EditCv;
 use App\Filament\Resources\Cvs\Pages\ListCvs;
 use App\Models\Cv;
+use App\Models\CvSkill;
 use App\Models\Portfolio;
 use App\Models\User;
 use App\Services\CvGeneratorService;
@@ -235,6 +237,52 @@ class CvTest extends TestCase
 
         $cv->forceFill(['full_name' => null])->saveQuietly();
         $this->assertSame('cv_CV.pdf', $cv->fresh()->downloadFilename());
+    }
+
+    public function test_saving_the_cv_form_keeps_every_skill_group(): void
+    {
+        $this->actingAs(User::first());
+
+        $cv = Cv::first();
+
+        $before = $cv->skills()
+            ->get()
+            ->groupBy(fn (CvSkill $skill): string => $skill->group->value)
+            ->map->count()
+            ->all();
+
+        $this->assertGreaterThan(1, count($before), 'needs more than one group to be meaningful');
+
+        // Each group is its own repeater over the same relation; saving must not
+        // let one of them delete the rows belonging to the others.
+        Livewire::test(EditCv::class, ['record' => $cv->getRouteKey()])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $after = $cv->skills()
+            ->get()
+            ->groupBy(fn (CvSkill $skill): string => $skill->group->value)
+            ->map->count()
+            ->all();
+
+        $this->assertSame($before, $after);
+    }
+
+    public function test_the_cv_renders_skill_groups_in_enum_order(): void
+    {
+        $cv = Portfolio::default('hu')->cv;
+
+        // Per-group repeaters restart sort_order at zero, so the group order has
+        // to come from the enum rather than from the rows.
+        $cv->skills()->delete();
+        $cv->skills()->create(['group' => SkillGroup::Other->value, 'name' => 'Zed', 'sort_order' => 0]);
+        $cv->skills()->create(['group' => SkillGroup::Backend->value, 'name' => 'Alpha', 'sort_order' => 0]);
+        $cv->skills()->create(['group' => SkillGroup::Frontend->value, 'name' => 'Mid', 'sort_order' => 0]);
+
+        $html = app(CvGeneratorService::class)->renderHtml($cv->refresh());
+
+        $this->assertLessThan(strpos($html, 'Mid'), strpos($html, 'Alpha'));
+        $this->assertLessThan(strpos($html, 'Zed'), strpos($html, 'Mid'));
     }
 
     public function test_deleting_a_cv_cascades_to_its_own_content(): void

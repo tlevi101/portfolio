@@ -7,6 +7,7 @@ use App\Models\Portfolio;
 use App\Services\ImageOptimizer;
 use Filament\Forms\Components\Field;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
@@ -16,6 +17,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -161,27 +163,40 @@ class CvForm
     protected static function skillsTab(): Tab
     {
         return Tab::make(__('Skills'))
+            ->schema(
+                collect(SkillGroup::cases())
+                    ->map(fn (SkillGroup $group): Repeater => self::skillGroupRepeater($group))
+                    ->all()
+            );
+    }
+
+    /**
+     * One repeater per group, each scoped to its own slice of the relation, so
+     * a group can be added to and reordered on its own instead of everything
+     * sharing a single list with a group dropdown on every row.
+     */
+    protected static function skillGroupRepeater(SkillGroup $group): Repeater
+    {
+        return Repeater::make('skills'.$group->value)
+            ->label(__($group->label()))
+            ->relationship(
+                'skills',
+                modifyQueryUsing: fn (Builder $query): Builder => $query->where('group', $group->value),
+            )
+            ->live()
             ->schema([
-                Repeater::make('skills')
+                Hidden::make('group')->default($group->value),
+                TextInput::make('name')
                     ->hiddenLabel()
-                    ->relationship()
-                    ->live()
-                    ->schema([
-                        Select::make('group')
-                            ->label(__('Group'))
-                            ->options(collect(SkillGroup::cases())->mapWithKeys(
-                                fn (SkillGroup $group): array => [$group->value => __($group->label())]
-                            ))
-                            ->default(SkillGroup::Backend->value)
-                            ->required(),
-                        TextInput::make('name')->label(__('Skill name'))->required()->maxLength(self::TEXT_LIMIT),
-                    ])
-                    ->orderColumn('sort_order')
-                    ->reorderableWithButtons()
-                    ->itemLabel(fn (array $state): ?string => $state['name'] ?? null)
-                    ->columns(2)
-                    ->columnSpanFull(),
-            ]);
+                    ->placeholder(__('Skill name'))
+                    ->required()
+                    ->maxLength(self::TEXT_LIMIT),
+            ])
+            ->orderColumn('sort_order')
+            ->reorderableWithButtons()
+            ->addActionLabel(__('Add skill'))
+            ->grid(2)
+            ->columnSpanFull();
     }
 
     protected static function experienceTab(): Tab

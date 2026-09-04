@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\SkillGroup;
 use App\Models\Cv;
 use App\Models\CvProject;
 use App\Models\CvSkill;
@@ -67,7 +68,8 @@ class CvGeneratorService
             'workExperiences' => $this->ordered($cv->workExperiences),
             'educations' => $this->ordered($cv->education),
             'skillsByGroup' => $this->ordered($cv->skills)
-                ->groupBy(fn (CvSkill $skill): string => $skill->group->value),
+                ->groupBy(fn (CvSkill $skill): string => $skill->group->value)
+                ->sortBy(fn (Collection $skills, string $group): int => SkillGroup::from($group)->sortIndex()),
             'projects' => $this->ordered($cv->projects),
             'stackHighlights' => collect($cv->stack_highlights ?? [])->filter()->values(),
             'languages' => collect($cv->languages ?? [])->filter(fn (array $language): bool => filled($language['name'] ?? null)),
