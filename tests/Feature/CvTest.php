@@ -131,6 +131,32 @@ class CvTest extends TestCase
         $this->assertNotSame('Unsaved Name', $cv->fresh()->full_name);
     }
 
+    public function test_the_live_preview_includes_the_skills(): void
+    {
+        $this->actingAs(User::first());
+
+        $cv = Cv::first();
+        $skill = $cv->skills()->where('group', SkillGroup::Backend->value)->firstOrFail();
+
+        $component = Livewire::test(EditCv::class, ['record' => $cv->getRouteKey()]);
+
+        // Skills are edited as one repeater per group, so the preview has to
+        // gather them from every group's own state rather than a `skills` key.
+        $this->assertStringContainsString(
+            $skill->name,
+            (string) Cache::get($component->instance()->getCvPreviewCacheKey()),
+        );
+
+        // And an unsaved rename must reach it too.
+        $key = array_key_first($component->get('data.skillsBackend'));
+        $component->set("data.skillsBackend.{$key}.name", 'Unsaved Skill');
+
+        $html = (string) Cache::get($component->instance()->getCvPreviewCacheKey());
+
+        $this->assertStringContainsString('Unsaved Skill', $html);
+        $this->assertNotSame('Unsaved Skill', $skill->fresh()->name);
+    }
+
     public function test_the_preview_endpoint_is_not_public(): void
     {
         $this->get('/admin/cv-preview/anything')->assertRedirect();

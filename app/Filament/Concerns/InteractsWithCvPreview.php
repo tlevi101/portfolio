@@ -2,6 +2,7 @@
 
 namespace App\Filament\Concerns;
 
+use App\Enums\SkillGroup;
 use App\Models\Cv;
 use App\Models\CvProject;
 use App\Models\CvSkill;
@@ -114,10 +115,27 @@ trait InteractsWithCvPreview
         ));
 
         $cv->setRelation('education', $this->hydratePreviewRelation($state['education'] ?? [], Education::class));
-        $cv->setRelation('skills', $this->hydratePreviewRelation($state['skills'] ?? [], CvSkill::class));
+        $cv->setRelation('skills', $this->hydratePreviewSkills($state));
         $cv->setRelation('projects', $this->hydratePreviewRelation($state['projects'] ?? [], CvProject::class));
 
         return $cv;
+    }
+
+    /**
+     * Skills are edited as one repeater per group, so the form has no single
+     * `skills` key to read: the rows are collected from each group's own state
+     * and stamped with the group they came from.
+     *
+     * @param  array<string, mixed>  $state
+     * @return Collection<int, CvSkill>
+     */
+    protected function hydratePreviewSkills(array $state): Collection
+    {
+        return collect(SkillGroup::cases())
+            ->flatMap(fn (SkillGroup $group): Collection => $this
+                ->hydratePreviewRelation($state['skills'.$group->value] ?? [], CvSkill::class)
+                ->each(fn (CvSkill $skill) => $skill->setAttribute('group', $group->value)))
+            ->values();
     }
 
     /**
