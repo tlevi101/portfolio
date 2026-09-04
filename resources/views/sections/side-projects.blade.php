@@ -6,7 +6,7 @@
                 <h2 class="section-title">{{ $profile->experiments_heading }}</h2>
             @endif
             @if ($profile->experiments_intro ?? false)
-                <p class="section-text">{{ $profile->experiments_intro }}</p>
+                <div class="rich section-text">{!! str($profile->experiments_intro)->sanitizeHtml() !!}</div>
             @endif
         </div>
 
@@ -16,9 +16,9 @@
                     <h3 class="text-[length:var(--text-lg)] mb-3">
                         {{ $project->title }}
                     </h3>
-                    <p class="text-muted mb-4">
-                        {{ $project->summary }}
-                    </p>
+                    <div class="rich text-muted mb-4">
+                        {!! str($project->summary)->sanitizeHtml() !!}
+                    </div>
                     <ul class="tag-list">
                         @foreach ($project->stack as $tech)
                             <li class="tag">{{ $tech }}</li>

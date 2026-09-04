@@ -25,5 +25,10 @@ class DatabaseSeeder extends Seeder
         );
 
         $this->call(PortfolioSeeder::class);
+
+        // Gives a freshly seeded CV the identity, skills and projects it used to
+        // read off its portfolio. Only fills what is empty, so it is a no-op on
+        // an install where the CVs already carry their own content.
+        $this->call(CvContentFromPortfolioSeeder::class);
     }
 }

@@ -11,7 +11,7 @@
                 <h2 class="section-title">{{ $profile->projects_heading }}</h2>
             @endif
             @if ($profile->projects_subheading ?? false)
-                <p class="section-text">{{ $profile->projects_subheading }}</p>
+                <div class="rich section-text">{!! str($profile->projects_subheading)->sanitizeHtml() !!}</div>
             @endif
         </div>
 
@@ -30,18 +30,18 @@
                             <h3 class="text-[clamp(1.6rem,3vw,2.4rem)] leading-[1.08]">
                                 {{ $featured->title }}
                             </h3>
-                            <p class="text-muted">{{ $featured->summary }}</p>
+                            <div class="rich text-muted">{!! str($featured->summary)->sanitizeHtml() !!}</div>
                         </div>
 
                         <ul class="micro-list">
                             @if ($featured->problem)
-                                <li><strong>{{ __('Problem:') }}</strong> {{ $featured->problem }}</li>
+                                <li class="rich rich-inline"><strong>{{ __('Problem:') }}</strong> {!! str($featured->problem)->sanitizeHtml() !!}</li>
                             @endif
                             @if ($featured->role_description)
-                                <li><strong>{{ __('Role:') }}</strong> {{ $featured->role_description }}</li>
+                                <li class="rich rich-inline"><strong>{{ __('Role:') }}</strong> {!! str($featured->role_description)->sanitizeHtml() !!}</li>
                             @endif
                             @if ($featured->outcome)
-                                <li><strong>{{ __('Outcome:') }}</strong> {{ $featured->outcome }}</li>
+                                <li class="rich rich-inline"><strong>{{ __('Outcome:') }}</strong> {!! str($featured->outcome)->sanitizeHtml() !!}</li>
                             @endif
                         </ul>
                     </div>
@@ -67,9 +67,9 @@
                             <h3 class="text-[length:var(--text-lg)] mb-3">
                                 {{ $project->title }}
                             </h3>
-                            <p class="text-muted mb-4">
-                                {{ $project->summary }}
-                            </p>
+                            <div class="rich text-muted mb-4">
+                                {!! str($project->summary)->sanitizeHtml() !!}
+                            </div>
                             <ul class="tag-list">
                                 @foreach ($project->stack as $tech)
                                     <li class="tag">{{ $tech }}</li>

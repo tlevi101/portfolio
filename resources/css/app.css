@@ -259,6 +259,29 @@
 
     .section-text { color: var(--p-text-muted); }
 
+    /* ─── Rich text ─────────────────────────────────────────────
+       Output of the admin's minimal WYSIWYG (bold / italic / links).
+       The editor emits block-level paragraphs, so `.rich` gives them
+       rhythm and `.rich-inline` collapses them back onto one line for
+       the places that read as a single sentence. */
+
+    .rich > :first-child { margin-top: 0; }
+    .rich > :last-child { margin-bottom: 0; }
+    .rich p + p { margin-top: var(--space-4); }
+    .rich strong { font-weight: 600; color: var(--p-text); }
+    .rich em { font-style: italic; }
+
+    .rich a {
+        color: var(--p-primary);
+        text-decoration: underline;
+        text-underline-offset: 0.2em;
+    }
+
+    .rich-inline p {
+        display: inline;
+        margin: 0;
+    }
+
     /* Buttons */
     .button {
         display: inline-flex;

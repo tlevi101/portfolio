@@ -3,10 +3,10 @@
 namespace App\Observers;
 
 use App\Models\Cv;
+use App\Models\CvProject;
+use App\Models\CvSkill;
 use App\Models\Education;
 use App\Models\Portfolio;
-use App\Models\Project;
-use App\Models\Skill;
 use App\Models\WorkExperience;
 use App\Services\CvGeneratorService;
 use Illuminate\Database\Eloquent\Model;
@@ -47,14 +47,18 @@ class CvDependencyObserver
     {
         if ($model instanceof Cv) {
             self::$cvIds[$model->id] = true;
-        } elseif ($model instanceof WorkExperience || $model instanceof Education) {
+        } elseif (
+            $model instanceof WorkExperience
+            || $model instanceof Education
+            || $model instanceof CvSkill
+            || $model instanceof CvProject
+        ) {
             $this->rememberCv($model->cv_id);
             $this->rememberCv($model->getOriginal('cv_id'));
         } elseif ($model instanceof Portfolio) {
+            // The CV owns its content now; only the portfolio itself still
+            // feeds it, via the slug the QR code falls back to.
             self::$portfolioIds[$model->id] = true;
-        } elseif ($model instanceof Project || $model instanceof Skill) {
-            $this->rememberPortfolio($model->portfolio_id);
-            $this->rememberPortfolio($model->getOriginal('portfolio_id'));
         }
 
         $this->scheduleRegeneration();

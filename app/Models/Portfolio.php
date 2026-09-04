@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
  * @property bool $is_default
  * @property int|null $cv_id
  * @property array<int, string> $experience_highlights
- * @property array<int, array{name: string, level: string}>|null $languages
+ * @property array<int, array<string, string>>|null $languages
  * @property string|null $hero_eyebrow
  * @property string|null $available_text
  * @property string|null $avatar_path
@@ -155,6 +155,23 @@ class Portfolio extends Model
     public function cv(): BelongsTo
     {
         return $this->belongsTo(Cv::class);
+    }
+
+    /**
+     * The "Download CV" link, stamped with the CV's version so a rebuilt PDF is
+     * never served from a phone's download cache. Null when no CV is linked.
+     */
+    public function cvDownloadUrl(): ?string
+    {
+        if ($this->cv === null) {
+            return null;
+        }
+
+        return route('cv.download', [
+            'slug' => $this->slug,
+            'lang' => $this->locale,
+            'v' => $this->cv->downloadVersion(),
+        ]);
     }
 
     /**
