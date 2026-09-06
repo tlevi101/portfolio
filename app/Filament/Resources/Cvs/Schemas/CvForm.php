@@ -31,6 +31,13 @@ class CvForm
      */
     public const TEXT_LIMIT = 500;
 
+    /**
+     * How long typing has to pause before the state is pushed to the server.
+     * Livewire's own default for a live input is 150ms, which is inside the
+     * rhythm of ordinary typing.
+     */
+    public const LIVE_DEBOUNCE = '600ms';
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -132,9 +139,8 @@ class CvForm
                         ->maxLength(self::TEXT_LIMIT)
                         ->helperText(__('The QR code target. Falls back to the linked portfolio\'s address when empty.'))
                 ),
-                Repeater::make('languages')
+                self::liveRepeater(Repeater::make('languages'))
                     ->label(__('Languages'))
-                    ->live()
                     ->schema([
                         TextInput::make('name')->label(__('Language'))->required()->maxLength(self::TEXT_LIMIT),
                         Select::make('level')
@@ -177,13 +183,12 @@ class CvForm
      */
     protected static function skillGroupRepeater(SkillGroup $group): Repeater
     {
-        return Repeater::make('skills'.$group->value)
+        return self::liveRepeater(Repeater::make('skills'.$group->value))
             ->label(__($group->label()))
             ->relationship(
                 'skills',
                 modifyQueryUsing: fn (Builder $query): Builder => $query->where('group', $group->value),
             )
-            ->live()
             ->schema([
                 Hidden::make('group')->default($group->value),
                 TextInput::make('name')
@@ -203,10 +208,9 @@ class CvForm
     {
         return Tab::make(__('Work experience'))
             ->schema([
-                Repeater::make('workExperiences')
+                self::liveRepeater(Repeater::make('workExperiences'))
                     ->hiddenLabel()
                     ->relationship()
-                    ->live()
                     ->schema([
                         TextInput::make('company')->label(__('Company'))->required()->maxLength(self::TEXT_LIMIT),
                         TextInput::make('title')->label(__('Job title'))->required()->maxLength(self::TEXT_LIMIT),
@@ -236,10 +240,9 @@ class CvForm
     {
         return Tab::make(__('Projects'))
             ->schema([
-                Repeater::make('projects')
+                self::liveRepeater(Repeater::make('projects'))
                     ->hiddenLabel()
                     ->relationship()
-                    ->live()
                     ->schema([
                         TextInput::make('title')->label(__('Title'))->required()->maxLength(self::TEXT_LIMIT)->columnSpanFull(),
                         TagsInput::make('stack')->label(__('Stack'))->placeholder(__('Add technology'))->columnSpanFull(),
@@ -256,10 +259,9 @@ class CvForm
     {
         return Tab::make(__('Education'))
             ->schema([
-                Repeater::make('education')
+                self::liveRepeater(Repeater::make('education'))
                     ->hiddenLabel()
                     ->relationship()
-                    ->live()
                     ->schema([
                         TextInput::make('school')->label(__('School'))->required()->maxLength(self::TEXT_LIMIT)->columnSpanFull(),
                         TextInput::make('degree')->label(__('Degree'))->maxLength(self::TEXT_LIMIT),
@@ -294,6 +296,12 @@ class CvForm
      * Push edits to the server as they are typed so the preview pane can keep
      * up, without a round trip on every single keystroke.
      *
+     * `skipRenderAfterStateUpdated()` is what keeps the form usable while that
+     * happens: without it every push re-renders the whole schema and Livewire
+     * morphs the result over the DOM the user is typing into. The preview does
+     * not need any of that HTML — it reloads off the `$cvPreviewHash` property,
+     * which travels in the snapshot either way.
+     *
      * @template TField of Field
      *
      * @param  TField  $field
@@ -301,6 +309,23 @@ class CvForm
      */
     protected static function live(Field $field): Field
     {
-        return $field->live(debounce: '600ms');
+        return $field
+            ->live(debounce: self::LIVE_DEBOUNCE)
+            ->skipRenderAfterStateUpdated();
+    }
+
+    /**
+     * The same treatment for a repeater. Its rows inherit the binding from it,
+     * so this is what puts a debounce on the inputs inside — and the skip
+     * covers them too, because an update to a row bubbles up to the repeater.
+     *
+     * Adding, removing and reordering rows are actions rather than state
+     * updates, so those still re-render as usual.
+     */
+    protected static function liveRepeater(Repeater $repeater): Repeater
+    {
+        return $repeater
+            ->live(debounce: self::LIVE_DEBOUNCE)
+            ->skipRenderAfterStateUpdated();
     }
 }
