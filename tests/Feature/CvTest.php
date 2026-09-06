@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\SkillGroup;
 use App\Filament\Resources\Cvs\Pages\EditCv;
 use App\Filament\Resources\Cvs\Pages\ListCvs;
+use App\Filament\Resources\Cvs\Schemas\CvForm;
 use App\Models\Cv;
 use App\Models\CvSkill;
 use App\Models\Portfolio;
@@ -122,10 +123,9 @@ class CvTest extends TestCase
         $component = Livewire::test(EditCv::class, ['record' => $cv->getRouteKey()])
             ->set('data.full_name', 'Unsaved Name');
 
-        $html = Cache::get($component->instance()->getCvPreviewCacheKey());
-
-        $this->assertNotNull($html);
-        $this->assertStringContainsString('Unsaved Name', $html);
+        $this->get($component->instance()->getCvPreviewUrl())
+            ->assertOk()
+            ->assertSee('Unsaved Name', false);
 
         // Only the preview changed — nothing was written to the record.
         $this->assertNotSame('Unsaved Name', $cv->fresh()->full_name);
@@ -139,22 +139,64 @@ class CvTest extends TestCase
         $skill = $cv->skills()->where('group', SkillGroup::Backend->value)->firstOrFail();
 
         $component = Livewire::test(EditCv::class, ['record' => $cv->getRouteKey()]);
+        $url = $component->instance()->getCvPreviewUrl();
 
         // Skills are edited as one repeater per group, so the preview has to
         // gather them from every group's own state rather than a `skills` key.
-        $this->assertStringContainsString(
-            $skill->name,
-            (string) Cache::get($component->instance()->getCvPreviewCacheKey()),
-        );
+        $this->get($url)->assertOk()->assertSee($skill->name, false);
 
         // And an unsaved rename must reach it too.
         $key = array_key_first($component->get('data.skillsBackend'));
         $component->set("data.skillsBackend.{$key}.name", 'Unsaved Skill');
 
-        $html = (string) Cache::get($component->instance()->getCvPreviewCacheKey());
+        $this->get($url)->assertOk()->assertSee('Unsaved Skill', false);
 
-        $this->assertStringContainsString('Unsaved Skill', $html);
         $this->assertNotSame('Unsaved Skill', $skill->fresh()->name);
+    }
+
+    public function test_the_form_only_publishes_state_and_leaves_the_rendering_to_the_preview_request(): void
+    {
+        $this->actingAs(User::first());
+
+        $component = Livewire::test(EditCv::class, ['record' => Cv::first()->getRouteKey()])
+            ->set('data.full_name', 'Unsaved Name');
+
+        $payload = Cache::get($component->instance()->getCvPreviewCacheKey());
+
+        // Rendering the CV takes long enough to be felt between keystrokes, so
+        // the form hands over the state and nothing else.
+        $this->assertIsArray($payload);
+        $this->assertSame('Unsaved Name', $payload['state']['full_name']);
+    }
+
+    public function test_typing_does_not_re_render_the_form(): void
+    {
+        $this->actingAs(User::first());
+
+        $component = Livewire::test(EditCv::class, ['record' => Cv::first()->getRouteKey()])
+            ->set('data.full_name', 'Unsaved Name');
+
+        // Without this the response carries the whole schema again and Livewire
+        // morphs it over the fields being typed into. The preview reloads off
+        // the hash in the snapshot, so it needs no HTML.
+        $this->assertArrayNotHasKey('html', $component->effects);
+        $this->assertNotEmpty($component->get('cvPreviewHash'));
+    }
+
+    public function test_live_fields_are_debounced(): void
+    {
+        $this->actingAs(User::first());
+
+        $html = $this->get('/admin/cvs/'.Cv::first()->getRouteKey().'/edit')->assertOk()->getContent();
+
+        // Fields inside a repeater inherit their binding from it; left alone
+        // they fall back to Livewire's 150ms, which fires mid-word.
+        $this->assertMatchesRegularExpression(
+            '/wire:model\.live\.debounce\.'.preg_quote(CvForm::LIVE_DEBOUNCE, '/').'="data\.skillsBackend\.[^"]+\.name"/',
+            (string) $html,
+        );
+
+        $this->assertDoesNotMatchRegularExpression('/wire:model\.live="data\.[^"]*"/', (string) $html);
     }
 
     public function test_the_preview_endpoint_is_not_public(): void

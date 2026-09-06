@@ -51,9 +51,15 @@ class CvGeneratorService
      */
     public function renderHtml(Cv $cv): string
     {
+        $previous = App::getLocale();
+
         App::setLocale($cv->locale ?: config('app.locale'));
 
-        return view('cv.template', $this->viewData($cv))->render();
+        try {
+            return view('cv.template', $this->viewData($cv))->render();
+        } finally {
+            App::setLocale($previous);
+        }
     }
 
     /**
