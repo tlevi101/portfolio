@@ -9,6 +9,7 @@ use App\Models\Education;
 use App\Models\Portfolio;
 use App\Models\WorkExperience;
 use App\Services\CvGeneratorService;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 
@@ -28,7 +29,14 @@ class CvDependencyObserver
      */
     private static array $portfolioIds = [];
 
-    private static bool $scheduled = false;
+    /**
+     * The application instance the regeneration pass is already queued on.
+     *
+     * Not a plain flag: it is static, so it outlives the container it was set
+     * for — a second request, or a second test, would find it already true and
+     * never register its own callback, leaving those changes unrendered.
+     */
+    private static ?Application $scheduledFor = null;
 
     public function saved(Model $model): void
     {
@@ -85,19 +93,21 @@ class CvDependencyObserver
      */
     protected function scheduleRegeneration(): void
     {
-        if (self::$scheduled) {
+        $app = app();
+
+        if (self::$scheduledFor === $app) {
             return;
         }
 
-        self::$scheduled = true;
+        self::$scheduledFor = $app;
 
-        app()->terminating(function (): void {
+        $app->terminating(function (): void {
             try {
                 $this->regenerate();
             } finally {
                 self::$cvIds = [];
                 self::$portfolioIds = [];
-                self::$scheduled = false;
+                self::$scheduledFor = null;
             }
         });
     }

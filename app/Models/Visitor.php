@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 
 /**
  * One distinct visitor, identified only by the salted hash of their IP.
@@ -12,8 +14,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $ip_hash
  * @property string|null $country
  * @property bool $is_bot
- * @property \Illuminate\Support\Carbon|null $first_seen_at
- * @property \Illuminate\Support\Carbon|null $last_seen_at
+ * @property Carbon|null $first_seen_at
+ * @property Carbon|null $last_seen_at
+ * @property-read VisitSession|null $latestSession
+ * @property-read int|null $sessions_count aggregate, only when the query asks for it
  */
 class Visitor extends Model
 {
@@ -47,6 +51,29 @@ class Visitor extends Model
     public function visits(): HasMany
     {
         return $this->hasMany(Visit::class, 'ip_hash', 'ip_hash');
+    }
+
+    /**
+     * This visitor's browsing sessions, newest first — what the admin shows
+     * instead of an undifferentiated wall of events.
+     *
+     * @return HasMany<VisitSession, $this>
+     */
+    public function sessions(): HasMany
+    {
+        return $this->hasMany(VisitSession::class, 'ip_hash', 'ip_hash');
+    }
+
+    /**
+     * The most recent sitting, eager-loaded so the list can say which CV — and
+     * so which application — last brought this person in without a query per
+     * row.
+     *
+     * @return HasOne<VisitSession, $this>
+     */
+    public function latestSession(): HasOne
+    {
+        return $this->hasOne(VisitSession::class, 'ip_hash', 'ip_hash')->latestOfMany('started_at');
     }
 
     /**

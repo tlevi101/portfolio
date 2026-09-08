@@ -32,6 +32,13 @@ class CvForm
     public const TEXT_LIMIT = 500;
 
     /**
+     * The levels a language can be listed at, best first.
+     *
+     * @var array<int, string>
+     */
+    public const LANGUAGE_LEVELS = ['Native', 'C2', 'C1', 'B2', 'B1', 'A2', 'A1'];
+
+    /**
      * How long typing has to pause before the state is pushed to the server.
      * Livewire's own default for a live input is 150ms, which is inside the
      * rhythm of ordinary typing.
@@ -145,15 +152,10 @@ class CvForm
                         TextInput::make('name')->label(__('Language'))->required()->maxLength(self::TEXT_LIMIT),
                         Select::make('level')
                             ->label(__('Level'))
-                            ->options([
-                                'Native' => __('Native'),
-                                'C2' => 'C2',
-                                'C1' => 'C1',
-                                'B2' => 'B2',
-                                'B1' => 'B1',
-                                'A2' => 'A2',
-                                'A1' => 'A1',
-                            ])
+                            ->options(array_combine(
+                                self::LANGUAGE_LEVELS,
+                                array_map(fn (string $level): string => __($level), self::LANGUAGE_LEVELS),
+                            ))
                             ->required(),
                     ])
                     ->reorderableWithButtons()

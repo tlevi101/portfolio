@@ -5,6 +5,8 @@ namespace App\Filament\Resources\Cvs;
 use App\Filament\Resources\Cvs\Pages\CreateCv;
 use App\Filament\Resources\Cvs\Pages\EditCv;
 use App\Filament\Resources\Cvs\Pages\ListCvs;
+use App\Filament\Resources\Cvs\RelationManagers\ChildrenRelationManager;
+use App\Filament\Resources\Cvs\RelationManagers\JobApplicationsRelationManager;
 use App\Filament\Resources\Cvs\Schemas\CvForm;
 use App\Filament\Resources\Cvs\Tables\CvsTable;
 use App\Models\Cv;
@@ -50,7 +52,8 @@ class CvResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            JobApplicationsRelationManager::class,
+            ChildrenRelationManager::class,
         ];
     }
 

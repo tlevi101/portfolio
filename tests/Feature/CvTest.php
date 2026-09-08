@@ -3,8 +3,11 @@
 namespace Tests\Feature;
 
 use App\Enums\SkillGroup;
+use App\Filament\Resources\Cvs\CvResource;
 use App\Filament\Resources\Cvs\Pages\EditCv;
 use App\Filament\Resources\Cvs\Pages\ListCvs;
+use App\Filament\Resources\Cvs\RelationManagers\ChildrenRelationManager;
+use App\Filament\Resources\Cvs\RelationManagers\JobApplicationsRelationManager;
 use App\Filament\Resources\Cvs\Schemas\CvForm;
 use App\Models\Cv;
 use App\Models\CvSkill;
@@ -364,5 +367,182 @@ class CvTest extends TestCase
         $this->assertDatabaseMissing('cv_projects', ['cv_id' => $cvId]);
         $this->assertDatabaseMissing('work_experiences', ['cv_id' => $cvId]);
         $this->assertDatabaseMissing('education', ['cv_id' => $cvId]);
+    }
+
+    public function test_saving_the_cv_rebuilds_its_pdf_without_being_asked(): void
+    {
+        $this->actingAs(User::first());
+
+        $cv = Cv::first();
+        $cv->forceFill(['cv_path' => null])->saveQuietly();
+
+        Livewire::test(EditCv::class, ['record' => $cv->getRouteKey()])
+            ->set('data.role', 'Changed By The Test')
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        // The observer defers the render to the end of the request, so that
+        // starting Chrome never sits between pressing Save and the response.
+        $this->app->terminate();
+
+        $this->assertNotNull($cv->fresh()->cv_path);
+        Storage::disk('public')->assertExists((string) $cv->fresh()->cv_path);
+    }
+
+    public function test_editing_a_related_row_rebuilds_the_pdf_too(): void
+    {
+        $cv = Cv::first();
+        $cv->forceFill(['cv_path' => null])->saveQuietly();
+
+        // The CV row itself is untouched here; the observer has to map the
+        // changed dependency back to the CV that prints it.
+        $cv->skills()->first()->update(['name' => 'Renamed Skill']);
+
+        $this->app->terminate();
+
+        $this->assertNotNull($cv->fresh()->cv_path);
+    }
+
+    public function test_creating_a_variant_copies_the_content_and_attaches_it_to_the_parent(): void
+    {
+        $cv = Portfolio::default('hu')->cv;
+
+        $variant = $cv->createChild('Acme — Senior Backend');
+
+        $this->assertSame($cv->getKey(), $variant->parent_id);
+        $this->assertSame('Acme — Senior Backend', $variant->label);
+        $this->assertSame($cv->full_name, $variant->full_name);
+        $this->assertNull($variant->cv_path);
+
+        foreach (['skills', 'projects', 'workExperiences', 'education'] as $relation) {
+            $this->assertSame(
+                $cv->{$relation}()->count(),
+                $variant->{$relation}()->count(),
+                "{$relation} were not copied",
+            );
+        }
+    }
+
+    public function test_variants_never_nest_more_than_one_level(): void
+    {
+        $cv = Portfolio::default('hu')->cv;
+        $variant = $cv->createChild('First');
+
+        // Asked for a variant of a variant, both routes hand back a sibling so
+        // the master always sees every copy cut from it.
+        $this->assertSame($cv->getKey(), $variant->createChild('Second')->parent_id);
+        $this->assertSame($cv->getKey(), $variant->duplicate('Third')->parent_id);
+
+        $this->assertSame(3, $cv->children()->count());
+    }
+
+    public function test_duplicating_a_master_produces_another_master(): void
+    {
+        $cv = Portfolio::default('hu')->cv;
+
+        $this->assertNull($cv->duplicate('Another Master')->parent_id);
+    }
+
+    public function test_deleting_a_cv_cascades_to_its_variants_and_their_content(): void
+    {
+        $cv = Portfolio::default('hu')->cv;
+        $variant = $cv->createChild('Doomed');
+        $variantId = $variant->getKey();
+
+        $this->assertGreaterThan(0, $variant->skills()->count());
+
+        $cv->delete();
+
+        $this->assertDatabaseMissing('cvs', ['id' => $variantId]);
+        $this->assertDatabaseMissing('cv_skills', ['cv_id' => $variantId]);
+        $this->assertDatabaseMissing('cv_projects', ['cv_id' => $variantId]);
+        $this->assertDatabaseMissing('work_experiences', ['cv_id' => $variantId]);
+        $this->assertDatabaseMissing('education', ['cv_id' => $variantId]);
+    }
+
+    public function test_deleting_a_portfolio_takes_its_cvs_and_their_variants(): void
+    {
+        $portfolio = Portfolio::default('hu');
+        $cv = $portfolio->cv;
+        $variantId = $cv->createChild('Also Doomed')->getKey();
+
+        $portfolio->delete();
+
+        $this->assertDatabaseMissing('cvs', ['id' => $cv->getKey()]);
+        $this->assertDatabaseMissing('cvs', ['id' => $variantId]);
+    }
+
+    public function test_the_index_lists_masters_only(): void
+    {
+        $this->actingAs(User::first());
+
+        $cv = Portfolio::default('hu')->cv;
+        $variant = $cv->createChild('Hidden From The Index');
+
+        Livewire::test(ListCvs::class)
+            ->assertCanSeeTableRecords([$cv])
+            ->assertCanNotSeeTableRecords([$variant])
+            // The filter is there for when you do want to see them.
+            ->filterTable('parent_id', false)
+            ->assertCanSeeTableRecords([$cv, $variant]);
+    }
+
+    public function test_the_create_variant_action_is_offered_on_a_master_only(): void
+    {
+        $this->actingAs(User::first());
+
+        $cv = Portfolio::default('hu')->cv;
+        $variant = $cv->createChild('A Variant');
+
+        Livewire::test(EditCv::class, ['record' => $cv->getRouteKey()])
+            ->assertActionVisible('createChildCv');
+
+        Livewire::test(EditCv::class, ['record' => $variant->getRouteKey()])
+            ->assertActionHidden('createChildCv');
+    }
+
+    public function test_the_create_variant_action_attaches_the_copy_to_the_cv_it_was_run_from(): void
+    {
+        $this->actingAs(User::first());
+
+        $cv = Portfolio::default('hu')->cv;
+
+        Livewire::test(EditCv::class, ['record' => $cv->getRouteKey()])
+            ->callAction('createChildCv', ['label' => 'Globex — Backend Lead']);
+
+        $this->assertDatabaseHas('cvs', [
+            'label' => 'Globex — Backend Lead',
+            'parent_id' => $cv->getKey(),
+        ]);
+    }
+
+    public function test_the_variants_list_shows_the_children_of_the_cv_being_edited(): void
+    {
+        $this->actingAs(User::first());
+
+        $cv = Portfolio::default('hu')->cv;
+        $variant = $cv->createChild('Listed Here');
+        $unrelated = Cv::query()->whereKeyNot($cv->getKey())->whereNull('parent_id')->firstOrFail();
+
+        Livewire::test(ChildrenRelationManager::class, [
+            'ownerRecord' => $cv,
+            'pageClass' => EditCv::class,
+        ])
+            ->assertCanSeeTableRecords([$variant])
+            ->assertCanNotSeeTableRecords([$unrelated]);
+
+        // The edit page overrides `content()` to seat the preview beside the
+        // form, and an override drops everything it does not name — these lists
+        // included. With more than one they render as tabs, so the page carries
+        // the component of whichever is open; both being registered is what
+        // this is guarding.
+        $this->assertSame(
+            [JobApplicationsRelationManager::class, ChildrenRelationManager::class],
+            CvResource::getRelations(),
+        );
+
+        $this->get('/admin/cvs/'.$cv->getRouteKey().'/edit')
+            ->assertOk()
+            ->assertSee(JobApplicationsRelationManager::class, false);
     }
 }

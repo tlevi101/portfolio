@@ -2,10 +2,14 @@
 
 namespace App\Services;
 
+use App\Models\Cv;
 use App\Models\Visit;
 use App\Models\Visitor;
+use App\Models\VisitSession;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\IpUtils;
 
 class VisitRecorder
 {
@@ -23,6 +27,10 @@ class VisitRecorder
      */
     public function record(Request $request, string $event, ?string $path = null, ?string $slug = null, ?string $locale = null, ?string $referer = null, ?string $label = null, ?int $value = null): void
     {
+        if (! $this->shouldTrack($request)) {
+            return;
+        }
+
         $path ??= '/'.ltrim($request->path(), '/');
         [$pathOnly, $query] = $this->splitPath($path);
 
@@ -33,6 +41,7 @@ class VisitRecorder
             'label' => $label,
             'value' => $value,
             'ip_hash' => $this->hashIp($request->ip()),
+            'cv_id' => $this->cvFromToken($query[Cv::TRACKING_PARAMETER] ?? null),
             'path' => Str::limit($path, 1024, ''),
             'slug' => $slug ?? $this->slugFromPath($pathOnly),
             'locale' => $locale ?? ($query['lang'] ?? null),
@@ -42,7 +51,63 @@ class VisitRecorder
             'is_bot' => $this->looksLikeBot($userAgent),
         ]);
 
+        $this->attachToSession($visit);
         $this->touchVisitor($visit);
+    }
+
+    /**
+     * Whether this hit is worth recording at all.
+     *
+     * All three gates exist to keep the site's owner out of their own numbers.
+     * The one that does the real work is the session check: the beacon is a
+     * same-origin POST through the `web` group, so an admin who is logged in is
+     * recognisable without knowing anything about their network.
+     */
+    public function shouldTrack(Request $request): bool
+    {
+        if (Auth::check()) {
+            return false;
+        }
+
+        if ($request->is(...config('analytics.ignored_paths', []))) {
+            return false;
+        }
+
+        $ignored = config('analytics.ignored_ips', []);
+        $ip = $request->ip();
+
+        return $ignored === [] || $ip === null || ! IpUtils::checkIp($ip, $ignored);
+    }
+
+    /**
+     * Place the hit in a browsing session, opening one if the visitor has been
+     * quiet for longer than the gap.
+     *
+     * The session is saved once, after absorbing the hit, so opening a session
+     * costs one insert rather than an insert and an update.
+     */
+    private function attachToSession(Visit $visit): void
+    {
+        if ($visit->ip_hash === null) {
+            return;
+        }
+
+        $at = $visit->created_at ?? now();
+
+        $session = VisitSession::query()
+            ->where('ip_hash', $visit->ip_hash)
+            ->where('ended_at', '>=', $at->copy()->subMinutes(VisitSession::GAP_MINUTES))
+            ->orderByDesc('ended_at')
+            ->first()
+            // Whatever sent them here, captured before internal navigation
+            // overwrites the referrer with our own address.
+            ?? VisitSession::open($visit, $this->externalReferer($visit->referer));
+
+        $session->absorb($visit);
+        $session->save();
+
+        $visit->visit_session_id = $session->getKey();
+        $visit->save();
     }
 
     /**
@@ -66,6 +131,38 @@ class VisitRecorder
             : $visit->is_bot;
 
         $visitor->save();
+    }
+
+    /**
+     * The CV a tracking token belongs to.
+     *
+     * An unknown token is simply not attributed — the link may be from a CV
+     * that has since been deleted, or someone may have typed it wrong.
+     */
+    private function cvFromToken(mixed $token): ?int
+    {
+        if (! is_string($token) || blank($token)) {
+            return null;
+        }
+
+        return Cv::query()->where('tracking_token', $token)->value('id');
+    }
+
+    /**
+     * A referrer worth keeping: our own pages are where visitors come from once
+     * they are already here, which says nothing about how they found us.
+     */
+    private function externalReferer(?string $referer): ?string
+    {
+        if (blank($referer)) {
+            return null;
+        }
+
+        $host = parse_url((string) $referer, PHP_URL_HOST);
+
+        return $host !== null && $host !== parse_url((string) config('app.url'), PHP_URL_HOST)
+            ? $referer
+            : null;
     }
 
     private function hashIp(?string $ip): ?string

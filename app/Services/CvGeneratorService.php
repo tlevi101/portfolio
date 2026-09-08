@@ -68,6 +68,9 @@ class CvGeneratorService
     protected function viewData(Cv $cv): array
     {
         $portfolioUrl = $cv->portfolioUrl();
+        // The QR and the link are tracked; the text under them is not, so the
+        // reader is never shown a tracking code.
+        $trackedUrl = $cv->trackedPortfolioUrl();
 
         return [
             'cv' => $cv,
@@ -80,7 +83,8 @@ class CvGeneratorService
             'stackHighlights' => collect($cv->stack_highlights ?? [])->filter()->values(),
             'languages' => collect($cv->languages ?? [])->filter(fn (array $language): bool => filled($language['name'] ?? null)),
             'portfolioUrl' => $portfolioUrl,
-            'qr' => $portfolioUrl !== null ? $this->qrDataUri($portfolioUrl) : null,
+            'trackedUrl' => $trackedUrl,
+            'qr' => $trackedUrl !== null ? $this->qrDataUri($trackedUrl) : null,
             'avatar' => $this->avatarDataUri($cv->avatar_path),
         ];
     }

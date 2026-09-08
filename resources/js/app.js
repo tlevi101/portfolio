@@ -111,6 +111,12 @@
 
     let start = Date.now();
     let sentDuration = false;
+    // Livewire fires `livewire:navigated` on the initial load as well as after
+    // an SPA navigation, so trackPage() would otherwise run twice for the first
+    // page: two page views, and two IntersectionObservers reporting every
+    // section the visitor scrolls past twice over.
+    let trackedUrl = null;
+    let sectionObserver = null;
 
     function sendDuration() {
         if (sentDuration) { return; }
@@ -119,6 +125,10 @@
     }
 
     function trackPage() {
+        const url = location.pathname + location.search;
+        if (url === trackedUrl) { return; }
+        trackedUrl = url;
+
         // New page (initial load or SPA navigation): reset the duration timer.
         start = Date.now();
         sentDuration = false;
@@ -127,9 +137,13 @@
 
         // Section views — fire once per section the visitor scrolls to.
         try {
+            // The previous page's observer still holds its elements; left
+            // connected, every navigation would add another one reporting the
+            // same sections again.
+            if (sectionObserver) { sectionObserver.disconnect(); }
             const seen = {};
             const sections = ['top', 'projects', 'experiments', 'about', 'experience', 'contact'];
-            const observer = new IntersectionObserver(function (entries) {
+            sectionObserver = new IntersectionObserver(function (entries) {
                 entries.forEach(function (entry) {
                     const id = entry.target.id;
                     if (entry.isIntersecting && !seen[id]) {
@@ -140,7 +154,7 @@
             }, { threshold: 0.4 });
             sections.forEach(function (id) {
                 const el = document.getElementById(id);
-                if (el) { observer.observe(el); }
+                if (el) { sectionObserver.observe(el); }
             });
         } catch (e) {}
     }

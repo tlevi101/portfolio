@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\VisitEvent;
 use App\Models\Portfolio;
 use App\Services\CvGeneratorService;
 use App\Services\VisitRecorder;
@@ -24,7 +25,7 @@ class CvController extends Controller
 
         abort_if($cv === null, 404);
 
-        $visits->record($request, 'cv_download', slug: $portfolio->slug, locale: $portfolio->locale, referer: $request->headers->get('referer'));
+        $visits->record($request, VisitEvent::CvDownload->value, slug: $portfolio->slug, locale: $portfolio->locale, referer: $request->headers->get('referer'));
 
         App::setLocale($cv->locale ?: $portfolio->locale);
 
