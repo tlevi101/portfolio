@@ -498,7 +498,7 @@
         <div class="side-title">{{ __('Portfolio') }}</div>
         <div class="qr">
           <span class="frame"><img src="{{ $qr }}" alt="{{ __('Portfolio') }}" /></span>
-          <a class="qr-url" href="{{ $portfolioUrl }}">{{ rtrim(preg_replace('#^https?://#', '', $portfolioUrl), '/') }}</a>
+          <a class="qr-url" href="{{ $trackedUrl ?? $portfolioUrl }}">{{ rtrim(preg_replace('#^https?://#', '', $portfolioUrl), '/') }}</a>
         </div>
       </div>
     @endif

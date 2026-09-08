@@ -2,14 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ApplicationStatus;
 use App\Filament\Resources\Cvs\Pages\EditCv;
 use App\Models\Cv;
+use App\Models\JobApplication;
 use App\Models\Portfolio;
 use App\Models\User;
 use App\Services\CvFormState;
 use App\Services\CvImportResult;
 use App\Services\CvJsonExporter;
 use App\Services\CvJsonImporter;
+use App\Services\JobApplicationImporter;
 use Filament\Forms\Components\Repeater;
 use Filament\Schemas\Components\Component;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -251,7 +254,7 @@ class CvJsonImportTest extends TestCase
         $this->assertSame('Acme', $cv->fresh()->workExperiences()->sole()->company);
     }
 
-    public function test_the_import_action_fills_the_form_without_saving(): void
+    public function test_the_import_action_saves_the_cv(): void
     {
         $cv = Portfolio::default('hu')->cv;
         $document = $this->exportOf($cv);
@@ -262,7 +265,164 @@ class CvJsonImportTest extends TestCase
             ->assertHasNoActionErrors()
             ->assertSet('data.role', 'Imported Role');
 
-        $this->assertNotSame('Imported Role', $cv->fresh()->role);
+        // Importing is the last step of the round trip, not the middle of one:
+        // a CV left filled in but unsaved is a CV that looks finished and is not.
+        $this->assertSame('Imported Role', $cv->fresh()->role);
+    }
+
+    public function test_an_envelope_carries_the_cv_and_the_job_it_was_tuned_for(): void
+    {
+        $cv = Portfolio::default('hu')->cv;
+
+        $result = $this->import([
+            'cv' => ['id' => $cv->getKey(), 'role' => 'Senior Backend Engineer'],
+            'job_application' => [
+                'company' => 'Acme',
+                'title' => 'Senior Backend Engineer',
+                'method' => 'linkedin',
+                'experience_level' => 'senior',
+                'required_years' => 5,
+                'required_skills' => [
+                    ['name' => 'Laravel', 'years' => 3],
+                    ['name' => 'React', 'years' => null],
+                ],
+                'job_ad' => 'We are looking for a senior backend engineer.',
+            ],
+        ], $cv);
+
+        $this->assertFalse($result->failed(), implode(' ', $result->errors));
+        $this->assertSame('Senior Backend Engineer', $result->state['role']);
+        $this->assertSame('Acme', $result->jobApplication['company']);
+    }
+
+    public function test_an_imported_job_application_is_recorded_as_pending(): void
+    {
+        $cv = Portfolio::default('hu')->cv;
+
+        $application = app(JobApplicationImporter::class)->apply([
+            'company' => 'Acme',
+            'method' => 'ats',
+            'method_detail' => 'Greenhouse',
+            'required_skills' => [['name' => 'Laravel', 'years' => 3]],
+        ], $cv);
+
+        $this->assertSame(ApplicationStatus::Pending, $application->status);
+        $this->assertSame($cv->getKey(), $application->cv_id);
+        $this->assertSame('Greenhouse', $application->methodLabel());
+        $this->assertSame([['name' => 'Laravel', 'years' => 3]], $application->required_skills);
+        // The ad rarely says when it was answered, so the import supplies it.
+        $this->assertNotNull($application->applied_at);
+    }
+
+    public function test_an_application_carrying_its_own_id_is_updated_rather_than_duplicated(): void
+    {
+        $cv = Portfolio::default('hu')->cv;
+        $existing = app(JobApplicationImporter::class)->apply(['company' => 'Acme', 'notes' => 'Referred by a friend.'], $cv);
+
+        $updated = app(JobApplicationImporter::class)->apply([
+            'id' => $existing->getKey(),
+            'company' => 'Acme Ltd',
+        ], $cv);
+
+        $this->assertSame($existing->getKey(), $updated->getKey());
+        $this->assertSame('Acme Ltd', $updated->company);
+        // A second pass that says nothing about the notes must not erase them.
+        $this->assertSame('Referred by a friend.', $updated->notes);
+        $this->assertSame(1, JobApplication::query()->count());
+    }
+
+    public function test_an_application_belonging_to_another_cv_starts_a_new_record(): void
+    {
+        $cv = Portfolio::default('hu')->cv;
+        $variant = $cv->createChild('Acme variant');
+        $onTheMaster = app(JobApplicationImporter::class)->apply(['company' => 'Acme'], $cv);
+
+        // Exporting the master, then cutting the variant, carries the master's
+        // application id along. Moving the record would leave the master's own
+        // history wrong; the variant gets one of its own instead.
+        $onTheVariant = app(JobApplicationImporter::class)->apply([
+            'id' => $onTheMaster->getKey(),
+            'company' => 'Acme',
+        ], $variant);
+
+        $this->assertNotSame($onTheMaster->getKey(), $onTheVariant->getKey());
+        $this->assertSame($cv->getKey(), $onTheMaster->fresh()->cv_id);
+        $this->assertSame($variant->getKey(), $onTheVariant->cv_id);
+    }
+
+    public function test_an_unknown_envelope_key_is_refused(): void
+    {
+        $cv = Portfolio::default('hu')->cv;
+
+        $result = $this->import([
+            'cv' => ['id' => $cv->getKey()],
+            'jobApplication' => ['company' => 'Acme'],
+        ], $cv);
+
+        $this->assertTrue($result->failed());
+        $this->assertStringContainsString('jobApplication', implode(' ', $result->errors));
+    }
+
+    public function test_a_job_field_of_the_wrong_type_is_refused(): void
+    {
+        $cv = Portfolio::default('hu')->cv;
+
+        $result = $this->import([
+            'cv' => ['id' => $cv->getKey()],
+            'job_application' => ['company' => 'Acme', 'required_years' => 'about five'],
+        ], $cv);
+
+        $this->assertTrue($result->failed());
+        $this->assertStringContainsString('required_years', implode(' ', $result->errors));
+    }
+
+    public function test_an_unknown_job_field_is_refused(): void
+    {
+        $cv = Portfolio::default('hu')->cv;
+
+        $result = $this->import([
+            'cv' => ['id' => $cv->getKey()],
+            'job_application' => ['company' => 'Acme', 'salary' => '2000 EUR'],
+        ], $cv);
+
+        $this->assertTrue($result->failed());
+        $this->assertStringContainsString('salary', implode(' ', $result->errors));
+    }
+
+    public function test_the_import_action_records_the_job_application(): void
+    {
+        $cv = Portfolio::default('hu')->cv;
+
+        Livewire::test(EditCv::class, ['record' => $cv->getRouteKey()])
+            ->callAction('importCvJson', ['json' => (string) json_encode([
+                'cv' => ['id' => $cv->getKey(), 'role' => 'Senior Backend Engineer'],
+                'job_application' => ['company' => 'Acme', 'method' => 'email'],
+            ])])
+            ->assertHasNoActionErrors();
+
+        $application = JobApplication::query()->sole();
+
+        $this->assertSame('Acme', $application->company);
+        $this->assertSame($cv->getKey(), $application->cv_id);
+        $this->assertSame(ApplicationStatus::Pending, $application->status);
+        $this->assertSame('Senior Backend Engineer', $cv->fresh()->role);
+    }
+
+    public function test_the_export_carries_the_application_already_on_record(): void
+    {
+        $cv = Portfolio::default('hu')->cv;
+        app(JobApplicationImporter::class)->apply(['company' => 'Acme', 'title' => 'Backend Engineer'], $cv);
+
+        $document = app(CvJsonExporter::class)->document(
+            $this->stateOf($cv),
+            $cv->getKey(),
+            $cv->jobApplications()->first(),
+        );
+
+        $this->assertSame($cv->getKey(), $document['cv']['id']);
+        $this->assertSame('Acme', $document['job_application']['company']);
+        // Its id travels so a second pass updates it instead of duplicating it.
+        $this->assertNotNull($document['job_application']['id']);
     }
 
     public function test_the_form_still_renders_after_an_import(): void

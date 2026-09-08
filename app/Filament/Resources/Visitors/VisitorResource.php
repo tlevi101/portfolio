@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\Visitors;
 
 use App\Filament\Resources\Visitors\Pages\ListVisitors;
+use App\Filament\Resources\Visitors\Pages\ViewVisitor;
+use App\Filament\Resources\Visitors\RelationManagers\SessionsRelationManager;
 use App\Filament\Resources\Visitors\Tables\VisitorsTable;
 use App\Models\Visitor;
 use BackedEnum;
@@ -16,7 +18,7 @@ class VisitorResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
 
     public static function getNavigationLabel(): string
     {
@@ -43,10 +45,18 @@ class VisitorResource extends Resource
         return VisitorsTable::configure($table);
     }
 
+    public static function getRelations(): array
+    {
+        return [
+            SessionsRelationManager::class,
+        ];
+    }
+
     public static function getPages(): array
     {
         return [
             'index' => ListVisitors::route('/'),
+            'view' => ViewVisitor::route('/{record}'),
         ];
     }
 }

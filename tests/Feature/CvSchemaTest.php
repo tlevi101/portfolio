@@ -3,8 +3,11 @@
 namespace Tests\Feature;
 
 use App\Console\Commands\GenerateCvSchema;
+use App\Enums\ApplicationMethod;
+use App\Enums\ExperienceLevel;
 use App\Enums\SkillGroup;
 use App\Filament\Resources\Cvs\Schemas\CvForm;
+use App\Models\JobApplication;
 use App\Services\CvSchema;
 use Symfony\Component\Yaml\Yaml;
 use Tests\TestCase;
@@ -65,16 +68,46 @@ class CvSchemaTest extends TestCase
         $this->assertFileExists($skill);
 
         $prose = (string) file_get_contents($skill);
-        $properties = app(CvSchema::class)->toArray()['components']['schemas']['Cv']['properties'];
+        $schemas = app(CvSchema::class)->toArray()['components']['schemas'];
 
         // The skill is what an AI actually reads; the schema beside it is the
         // fine print. A field renamed in one and not the other leaves the skill
         // teaching a CV that no longer exists.
-        foreach (array_keys($properties) as $field) {
-            $this->assertStringContainsString($field, $prose, "the skill never mentions {$field}");
+        foreach (['Cv', 'JobApplication'] as $name) {
+            foreach (array_keys($schemas[$name]['properties']) as $field) {
+                $this->assertStringContainsString($field, $prose, "the skill never mentions {$name}.{$field}");
+            }
         }
 
         $this->assertStringContainsString((string) CvForm::TEXT_LIMIT, $prose);
+    }
+
+    public function test_the_root_carries_both_halves_of_a_tuning_session(): void
+    {
+        $schemas = app(CvSchema::class)->toArray()['components']['schemas'];
+        $root = $schemas['CvExport'];
+
+        $this->assertSame(['cv'], $root['required']);
+        $this->assertSame('#/components/schemas/Cv', $root['properties']['cv']['$ref']);
+        $this->assertSame('#/components/schemas/JobApplication', $root['properties']['job_application']['$ref']);
+    }
+
+    public function test_the_job_half_offers_only_the_channels_the_admin_knows(): void
+    {
+        $properties = app(CvSchema::class)->toArray()['components']['schemas']['JobApplication']['properties'];
+
+        // An enum value the application cannot store would be filled in by the
+        // AI and then silently dropped on the way back in.
+        $this->assertSame(array_column(ApplicationMethod::cases(), 'value'), $properties['method']['enum']);
+        $this->assertSame(array_column(ExperienceLevel::cases(), 'value'), $properties['experience_level']['enum']);
+        $this->assertSame(JobApplication::TEXT_LIMIT, $properties['company']['maxLength']);
+
+        // Only the company must be filled in; everything else is nullable
+        // because job ads leave it out.
+        $this->assertSame(['company'], app(CvSchema::class)->toArray()['components']['schemas']['JobApplication']['required']);
+
+        // The status is the admin's to move along, not the document's to report.
+        $this->assertArrayNotHasKey('status', $properties);
     }
 
     public function test_the_identity_block_and_the_guard_are_read_only(): void

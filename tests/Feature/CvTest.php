@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Enums\SkillGroup;
+use App\Filament\Resources\Cvs\CvResource;
 use App\Filament\Resources\Cvs\Pages\EditCv;
 use App\Filament\Resources\Cvs\Pages\ListCvs;
 use App\Filament\Resources\Cvs\RelationManagers\ChildrenRelationManager;
+use App\Filament\Resources\Cvs\RelationManagers\JobApplicationsRelationManager;
 use App\Filament\Resources\Cvs\Schemas\CvForm;
 use App\Models\Cv;
 use App\Models\CvSkill;
@@ -530,11 +532,17 @@ class CvTest extends TestCase
             ->assertCanNotSeeTableRecords([$unrelated]);
 
         // The edit page overrides `content()` to seat the preview beside the
-        // form, and an override drops everything it does not name — this list
-        // included. It loads lazily, so the page carries the component rather
-        // than the rendered table.
+        // form, and an override drops everything it does not name — these lists
+        // included. With more than one they render as tabs, so the page carries
+        // the component of whichever is open; both being registered is what
+        // this is guarding.
+        $this->assertSame(
+            [JobApplicationsRelationManager::class, ChildrenRelationManager::class],
+            CvResource::getRelations(),
+        );
+
         $this->get('/admin/cvs/'.$cv->getRouteKey().'/edit')
             ->assertOk()
-            ->assertSee(ChildrenRelationManager::class, false);
+            ->assertSee(JobApplicationsRelationManager::class, false);
     }
 }

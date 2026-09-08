@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Cvs\Actions;
 
 use App\Console\Commands\GenerateCvSchema;
 use App\Models\Cv;
+use App\Models\JobApplication;
 use App\Services\CvFormState;
 use App\Services\CvJsonExporter;
 use Filament\Actions\Action;
@@ -37,17 +38,33 @@ class ExportCvJsonAction
     }
 
     /**
-     * The CV document, pretty-printed so it stays readable in the textarea and
-     * survives being pasted into a chat.
+     * The tuning document, pretty-printed so it stays readable in the textarea
+     * and survives being pasted into a chat.
+     *
+     * The job application travels out with it when this CV already has one, so
+     * a second pass at the same job starts from what is on record rather than
+     * asking the same questions again and creating a duplicate.
      */
     protected static function document(EditRecord $livewire, Cv $record): string
     {
         $state = app(CvFormState::class)->sanitize($livewire->data ?? []);
 
         return (string) json_encode(
-            app(CvJsonExporter::class)->fromFormState($state, $record->getKey()),
+            app(CvJsonExporter::class)->document($state, $record->getKey(), self::application($record)),
             JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
         );
+    }
+
+    /**
+     * The application this CV was sent for. A CV normally has one — a variant
+     * is cut per job ad — so the most recent is the one being worked on.
+     */
+    protected static function application(Cv $record): ?JobApplication
+    {
+        return $record->jobApplications()
+            ->orderByDesc('applied_at')
+            ->orderByDesc('id')
+            ->first();
     }
 
     /**

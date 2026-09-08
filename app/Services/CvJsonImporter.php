@@ -7,7 +7,8 @@ use App\Models\Cv;
 use Illuminate\Support\Str;
 
 /**
- * Reads a CV document back into the form it was exported from.
+ * Reads a tuning document back into the form it was exported from, and hands
+ * the job application half on to be recorded.
  *
  * The inverse of `CvJsonExporter`, and the fussier direction: the form keeps
  * repeater rows keyed by an id of its own, nests a `simple()` repeater's values
@@ -42,6 +43,27 @@ class CvJsonImporter
         'education' => 'education',
     ];
 
+    /**
+     * The application fields read back in. `id` is left out for the same reason
+     * the CV's is: it is a guard, checked rather than written.
+     *
+     * @var array<int, string>
+     */
+    private const APPLICATION_FIELDS = [
+        'company',
+        'title',
+        'method',
+        'method_detail',
+        'source_url',
+        'location',
+        'experience_level',
+        'required_years',
+        'required_skills',
+        'job_ad',
+        'notes',
+        'applied_at',
+    ];
+
     public function __construct(private readonly CvSchema $schema) {}
 
     /**
@@ -57,15 +79,82 @@ class CvJsonImporter
             return CvImportResult::refused([__('That is not valid JSON. Paste the document exactly as it came back, including the outer braces.')]);
         }
 
-        if ($errors = $this->guard($document, $target)) {
+        if ($errors = $this->checkEnvelope($document)) {
             return CvImportResult::refused($errors);
         }
 
-        if ($errors = $this->validate($document)) {
+        [$cv, $application] = $this->unwrap($document);
+
+        if ($errors = $this->guard($cv, $target)) {
             return CvImportResult::refused($errors);
         }
 
-        return CvImportResult::accepted($this->apply($document, $current));
+        $errors = [
+            ...$this->validate($cv, 'Cv', array_keys(self::WRITABLE)),
+            ...($application !== null ? $this->validate($application, 'JobApplication', self::APPLICATION_FIELDS) : []),
+        ];
+
+        if ($errors !== []) {
+            return CvImportResult::refused($errors);
+        }
+
+        return CvImportResult::accepted($this->apply($cv, $current), $application);
+    }
+
+    /**
+     * Refuse an envelope carrying anything but its two halves, for the same
+     * reason a renamed CV field is refused: a key nobody reads is a change
+     * silently thrown away.
+     *
+     * @param  array<string, mixed>  $document
+     * @return array<int, string>
+     */
+    protected function checkEnvelope(array $document): array
+    {
+        if (! array_key_exists('cv', $document)) {
+            return [];
+        }
+
+        $errors = [];
+
+        foreach (array_keys($document) as $key) {
+            if (! in_array($key, ['cv', 'job_application'], true)) {
+                $errors[] = __('Unknown field ":field". The document holds "cv" and "job_application", nothing else.', ['field' => (string) $key]);
+            }
+        }
+
+        if (! is_array($document['cv'])) {
+            $errors[] = __('"cv" must be the CV document.');
+        }
+
+        if (array_key_exists('job_application', $document)
+            && $document['job_application'] !== null
+            && ! is_array($document['job_application'])) {
+            $errors[] = __('"job_application" must be an object, or absent.');
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Split the document into its two halves.
+     *
+     * A bare CV — no envelope — is still accepted. It is what a narrow request
+     * ("just redo the summary") naturally produces, and what every document
+     * exported before the job tracker existed looks like.
+     *
+     * @param  array<string, mixed>  $document
+     * @return array{0: array<string, mixed>, 1: array<string, mixed>|null}
+     */
+    protected function unwrap(array $document): array
+    {
+        if (! array_key_exists('cv', $document) || ! is_array($document['cv'])) {
+            return [$document, null];
+        }
+
+        $application = $document['job_application'] ?? null;
+
+        return [$document['cv'], is_array($application) ? $application : null];
     }
 
     /**
@@ -137,15 +226,21 @@ class CvJsonImporter
     }
 
     /**
-     * Check the document against the contract it was written to.
+     * Check half a document against the contract it was written to.
+     *
+     * `$descend` names the fields worth type-checking — the ones that are read
+     * back in. The rest are readOnly: they are accepted so a complete document
+     * round-trips, and then discarded, so whatever shape they arrived in does
+     * not matter.
      *
      * @param  array<string, mixed>  $document
+     * @param  array<int, string>  $descend
      * @return array<int, string>
      */
-    protected function validate(array $document): array
+    protected function validate(array $document, string $schemaName, array $descend): array
     {
         $schemas = $this->schema->toArray()['components']['schemas'];
-        $properties = $schemas['Cv']['properties'];
+        $properties = $schemas[$schemaName]['properties'];
         $errors = [];
 
         foreach ($document as $key => $value) {
@@ -157,7 +252,7 @@ class CvJsonImporter
                 continue;
             }
 
-            if (! isset(self::WRITABLE[$key])) {
+            if (! in_array($key, $descend, true)) {
                 continue;
             }
 
@@ -187,10 +282,35 @@ class CvJsonImporter
 
         return match ($definition['type'] ?? null) {
             'string' => $this->checkString($value, $definition, $path),
+            'integer' => $this->checkInteger($value, $definition, $path),
             'array' => $this->checkArray($value, $definition, $schemas, $path),
             'object' => $this->checkObject($value, $definition, $schemas, $path),
             default => [],
         };
+    }
+
+    /**
+     * @param  array<string, mixed>  $definition
+     * @return array<int, string>
+     */
+    protected function checkInteger(mixed $value, array $definition, string $path): array
+    {
+        if (! is_int($value)) {
+            return [__(':field must be a whole number.', ['field' => $path])];
+        }
+
+        $minimum = $definition['minimum'] ?? null;
+        $maximum = $definition['maximum'] ?? null;
+
+        if ((is_int($minimum) && $value < $minimum) || (is_int($maximum) && $value > $maximum)) {
+            return [__(':field must be between :min and :max.', [
+                'field' => $path,
+                'min' => (int) $minimum,
+                'max' => (int) $maximum,
+            ])];
+        }
+
+        return [];
     }
 
     /**

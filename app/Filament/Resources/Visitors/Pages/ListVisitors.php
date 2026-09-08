@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\Visitors\Pages;
 
 use App\Filament\Resources\Visitors\VisitorResource;
-use App\Filament\Resources\Visits\Widgets\VisitsOverview;
+use App\Filament\Resources\VisitSessions\Widgets\VisitsOverview;
 use App\Models\Visitor;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;

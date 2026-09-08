@@ -19,6 +19,7 @@ use Illuminate\Support\Str;
  * @property int $id
  * @property int|null $portfolio_id
  * @property int|null $parent_id
+ * @property string|null $tracking_token
  * @property string|null $label
  * @property string $locale
  * @property string|null $cv_path
@@ -37,12 +38,27 @@ use Illuminate\Support\Str;
  * @property-read Portfolio|null $portfolio
  * @property-read Cv|null $parent
  * @property-read Collection<int, Cv> $children
+ * @property-read Collection<int, JobApplication> $jobApplications
+ * @property-read Collection<int, VisitSession> $visitSessions
  */
 #[ObservedBy(CvDependencyObserver::class)]
 class Cv extends Model
 {
+    /**
+     * The query parameter the tracking token travels in.
+     *
+     * Named for nothing in particular: it appears in the address bar of anyone
+     * who follows the link, and "?cv_variant=" would invite them to take it off.
+     */
+    public const TRACKING_PARAMETER = 'r';
+
     protected $table = 'cvs';
 
+    /**
+     * `tracking_token` is deliberately absent: it is assigned once on creation
+     * and must not be settable from a form, an import, or a duplicate — two CVs
+     * sharing a token would attribute one's visitors to the other.
+     */
     protected $fillable = [
         'portfolio_id',
         'parent_id',
@@ -76,17 +92,62 @@ class Cv extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (Cv $cv): void {
+            $cv->tracking_token ??= self::newTrackingToken();
+        });
+
         static::deleting(function (Cv $cv): void {
             // No DB-level foreign keys, so clean up dependents explicitly.
             $cv->workExperiences()->delete();
             $cv->education()->delete();
             $cv->skills()->delete();
             $cv->projects()->delete();
+            $cv->jobApplications()->delete();
+
+            // Analytics outlive the CV they were attributed to: a session that
+            // happened, happened. The link is dropped rather than the history,
+            // so nothing is left pointing at an id that no longer exists.
+            $cv->visitSessions()->update(['cv_id' => null]);
+            $cv->visits()->update(['cv_id' => null]);
 
             // Deleted one at a time rather than through the relation's query so
             // each variant runs this same hook and takes its own content with it.
             $cv->children->each->delete();
         });
+    }
+
+    /**
+     * This CV's tracking token, assigning one if it somehow has none.
+     *
+     * The `creating` hook covers a CV made the ordinary way, but not every CV
+     * is: the seeder runs under `WithoutModelEvents` so that seeding does not
+     * kick off a PDF render per row, and a CV created there would otherwise go
+     * out with an untracked link and quietly attribute nothing.
+     */
+    public function trackingToken(): string
+    {
+        if (blank($this->tracking_token)) {
+            $this->forceFill(['tracking_token' => self::newTrackingToken()])->saveQuietly();
+        }
+
+        return (string) $this->tracking_token;
+    }
+
+    /**
+     * An unused tracking token.
+     *
+     * Ten characters of base62 — enough that guessing one is hopeless, short
+     * enough not to disfigure the link printed on the CV. Retried on collision
+     * rather than trusted: the column is unique, and a duplicate would surface
+     * as a save failure at the worst possible moment.
+     */
+    public static function newTrackingToken(): string
+    {
+        do {
+            $token = Str::random(10);
+        } while (static::query()->where('tracking_token', $token)->exists());
+
+        return $token;
     }
 
     /**
@@ -116,6 +177,37 @@ class Cv extends Model
     public function children(): HasMany
     {
         return $this->hasMany(self::class, 'parent_id');
+    }
+
+    /**
+     * The jobs this CV was sent for.
+     *
+     * Usually one — a variant is cut per job ad — but a master CV sent straight
+     * to a handful of places has several, which is why this is not a has-one.
+     *
+     * @return HasMany<JobApplication, $this>
+     */
+    public function jobApplications(): HasMany
+    {
+        return $this->hasMany(JobApplication::class);
+    }
+
+    /**
+     * Browsing sessions that arrived through this CV's printed link.
+     *
+     * @return HasMany<VisitSession, $this>
+     */
+    public function visitSessions(): HasMany
+    {
+        return $this->hasMany(VisitSession::class);
+    }
+
+    /**
+     * @return HasMany<Visit, $this>
+     */
+    public function visits(): HasMany
+    {
+        return $this->hasMany(Visit::class);
     }
 
     /**
@@ -270,5 +362,32 @@ class Cv extends Model
         }
 
         return $this->portfolio->portfolio_url ?: route('portfolio.show', $this->portfolio->slug);
+    }
+
+    /**
+     * The same address with this CV's tracking token on it — what the QR code
+     * encodes and what the printed link points at.
+     *
+     * The token rides in the query string because that is where the beacon
+     * already looks: it reports `location.search` with every hit, so a scanned
+     * QR needs no route of its own and no redirect that would lose the
+     * referrer. The link's visible text is rendered from the untracked address,
+     * so the CV never shows a tracking code to the person reading it.
+     */
+    public function trackedPortfolioUrl(): ?string
+    {
+        $url = $this->portfolioUrl();
+
+        if ($url === null) {
+            return null;
+        }
+
+        // An unsaved CV — the live preview builds one from the form state — has
+        // no row to hold a token, so its preview shows the untracked address.
+        if (! $this->exists) {
+            return $url;
+        }
+
+        return $url.(str_contains($url, '?') ? '&' : '?').self::TRACKING_PARAMETER.'='.$this->trackingToken();
     }
 }

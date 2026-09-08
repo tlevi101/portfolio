@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\SkillGroup;
+use App\Models\JobApplication;
 use Illuminate\Support\Collection;
 
 /**
@@ -18,6 +19,73 @@ use Illuminate\Support\Collection;
 class CvJsonExporter
 {
     public function __construct(private readonly CvFormState $formState) {}
+
+    /**
+     * The whole document: the CV, and the job it is being tuned for when one is
+     * already on record.
+     *
+     * The application half travels out as well as in so a second pass at the
+     * same job starts from what is already known about it, rather than asking
+     * the same questions again and quietly creating a duplicate record.
+     *
+     * @param  array<string, mixed>  $state
+     * @return array<string, mixed>
+     */
+    public function document(array $state, int|string|null $id = null, ?JobApplication $application = null): array
+    {
+        return [
+            'cv' => $this->fromFormState($state, $id),
+            'job_application' => $application !== null ? $this->jobApplication($application) : null,
+        ];
+    }
+
+    /**
+     * An application as the schema describes it. `status` is left out: it is
+     * the admin's to move along, not the document's to report.
+     *
+     * @return array<string, mixed>
+     */
+    public function jobApplication(JobApplication $application): array
+    {
+        return [
+            'id' => $application->getKey(),
+            'company' => $application->company,
+            'title' => $application->title,
+            'method' => $application->method?->value,
+            'method_detail' => $application->method_detail,
+            'source_url' => $application->source_url,
+            'location' => $application->location,
+            'experience_level' => $application->experience_level?->value,
+            'required_years' => $application->required_years,
+            'required_skills' => $this->requiredSkills($application),
+            'job_ad' => $application->job_ad,
+            'notes' => $application->notes,
+            'applied_at' => $application->applied_at?->toDateString(),
+        ];
+    }
+
+    /**
+     * @return array<int, array{name: string, years: int|null}>
+     */
+    protected function requiredSkills(JobApplication $application): array
+    {
+        $skills = [];
+
+        foreach ($application->required_skills ?? [] as $skill) {
+            if (! is_array($skill) || blank($skill['name'] ?? null)) {
+                continue;
+            }
+
+            $years = $skill['years'] ?? null;
+
+            $skills[] = [
+                'name' => (string) $skill['name'],
+                'years' => is_numeric($years) ? (int) $years : null,
+            ];
+        }
+
+        return $skills;
+    }
 
     /**
      * @param  array<string, mixed>  $state

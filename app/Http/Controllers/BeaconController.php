@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\VisitEvent;
 use App\Services\VisitRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Validation\Rule;
 
 class BeaconController extends Controller
 {
@@ -17,7 +19,7 @@ class BeaconController extends Controller
     public function store(Request $request): Response
     {
         $validated = $request->validate([
-            'event' => ['nullable', 'string', 'in:page_view,click,section,duration'],
+            'event' => ['nullable', 'string', Rule::in(VisitEvent::beaconValues())],
             'label' => ['nullable', 'string', 'max:40'],
             'value' => ['nullable', 'integer', 'min:0', 'max:86400'],
             'path' => ['nullable', 'string', 'max:1024'],
@@ -26,7 +28,7 @@ class BeaconController extends Controller
 
         $this->visits->record(
             $request,
-            $validated['event'] ?? 'page_view',
+            $validated['event'] ?? VisitEvent::PageView->value,
             path: $validated['path'] ?? null,
             referer: $validated['referrer'] ?? null,
             label: $validated['label'] ?? null,
