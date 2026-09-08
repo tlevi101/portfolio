@@ -3,7 +3,7 @@
 namespace App\Filament\Concerns;
 
 use App\Models\Cv;
-use App\Services\CvPreviewBuilder;
+use App\Services\CvFormState;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\View;
@@ -37,7 +37,7 @@ trait InteractsWithCvPreview
      */
     public function dehydrate(): void
     {
-        $state = app(CvPreviewBuilder::class)->sanitize($this->data ?? []);
+        $state = app(CvFormState::class)->sanitize($this->data ?? []);
 
         $hash = md5((string) json_encode($state));
 
@@ -75,8 +75,14 @@ trait InteractsWithCvPreview
      * Put the form and the preview side by side on wide screens. Below `xl` the
      * pane is hidden and the header's eye action opens the same document in a
      * modal instead, so the form keeps the full width on a laptop.
+     *
+     * Overriding `content()` replaces everything the page would otherwise render,
+     * relation managers included, so anything that belongs under the grid has to
+     * be handed in through `$below`.
+     *
+     * @param  array<int, mixed>  $below
      */
-    protected function cvPreviewContent(Schema $schema, mixed $formComponent): Schema
+    protected function cvPreviewContent(Schema $schema, mixed $formComponent, array $below = []): Schema
     {
         return $schema->components([
             Grid::make()
@@ -86,6 +92,7 @@ trait InteractsWithCvPreview
                     View::make('filament.cv.preview-pane')
                         ->columnSpan(['default' => 1, 'xl' => 5]),
                 ]),
+            ...$below,
         ]);
     }
 }

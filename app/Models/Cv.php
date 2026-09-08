@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Observers\CvDependencyObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -17,6 +18,7 @@ use Illuminate\Support\Str;
  *
  * @property int $id
  * @property int|null $portfolio_id
+ * @property int|null $parent_id
  * @property string|null $label
  * @property string $locale
  * @property string|null $cv_path
@@ -33,6 +35,8 @@ use Illuminate\Support\Str;
  * @property string|null $avatar_path
  * @property array<int, array<string, string>>|null $languages
  * @property-read Portfolio|null $portfolio
+ * @property-read Cv|null $parent
+ * @property-read Collection<int, Cv> $children
  */
 #[ObservedBy(CvDependencyObserver::class)]
 class Cv extends Model
@@ -41,6 +45,7 @@ class Cv extends Model
 
     protected $fillable = [
         'portfolio_id',
+        'parent_id',
         'label',
         'locale',
         'cv_path',
@@ -77,6 +82,10 @@ class Cv extends Model
             $cv->education()->delete();
             $cv->skills()->delete();
             $cv->projects()->delete();
+
+            // Deleted one at a time rather than through the relation's query so
+            // each variant runs this same hook and takes its own content with it.
+            $cv->children->each->delete();
         });
     }
 
@@ -86,6 +95,27 @@ class Cv extends Model
     public function portfolio(): BelongsTo
     {
         return $this->belongsTo(Portfolio::class);
+    }
+
+    /**
+     * The CV this one is a variant of, if any.
+     *
+     * @return BelongsTo<Cv, $this>
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    /**
+     * Variants of this CV — copies retuned for a particular job ad. Nesting is
+     * one level deep, so these never have children of their own.
+     *
+     * @return HasMany<Cv, $this>
+     */
+    public function children(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_id');
     }
 
     /**
@@ -132,18 +162,48 @@ class Cv extends Model
      * A standalone copy of this CV: its own identity, skills, projects, work
      * experience and education. Nothing is shared with the original, so the copy
      * can be reshaped for a job ad without touching what it came from.
-     *
-     * The stored PDF is deliberately not carried over — the copy renders its
-     * own on first download.
      */
     public function duplicate(?string $label = null): self
     {
-        return DB::transaction(function () use ($label): self {
-            // Built from the fillable content rather than `replicate()`: a record
-            // loaded through the resource table carries `withCount()` aggregates
-            // (skills_count, ...) that have no column to be inserted into.
+        return $this->copyItself(
+            $label ?? trim(($this->label ?? '').' '.__('(copy)')),
+            // A duplicate sits wherever the original sits: copying a variant
+            // gives another variant of the same master, not a nested one.
+            $this->parent_id,
+        );
+    }
+
+    /**
+     * A copy of this CV attached to it as a variant — the starting point for
+     * retuning it against a particular job ad, kept off the index and listed on
+     * the CV it came from.
+     */
+    public function createChild(?string $label = null): self
+    {
+        return $this->copyItself(
+            $label ?? trim(($this->label ?? '').' '.__('(variant)')),
+            // One level only: asked for a variant of a variant, hand back another
+            // variant of the master they share.
+            $this->parent_id ?? $this->getKey(),
+        );
+    }
+
+    /**
+     * The copy both of the above are built from.
+     *
+     * Assembled from the fillable content rather than `replicate()`: a record
+     * loaded through the resource table carries `withCount()` aggregates
+     * (skills_count, ...) that have no column to be inserted into.
+     *
+     * The stored PDF is deliberately not carried over — the copy renders its own
+     * on first download.
+     */
+    private function copyItself(string $label, ?int $parentId): self
+    {
+        return DB::transaction(function () use ($label, $parentId): self {
             $copy = new self(Arr::except($this->only($this->getFillable()), ['cv_path']));
-            $copy->label = $label ?? trim(($this->label ?? '').' '.__('(copy)'));
+            $copy->label = $label;
+            $copy->parent_id = $parentId;
             $copy->save();
 
             $this->copyOwnedContentTo($copy);

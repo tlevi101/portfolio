@@ -119,7 +119,11 @@ class Portfolio extends Model
             // No DB-level foreign keys, so clean up dependents explicitly.
             $portfolio->projects()->delete();
             $portfolio->skills()->delete();
-            $portfolio->cvs->each->delete();
+            // Masters first, so each takes its own variants with it. The second
+            // pass is re-queried and therefore only sees what survived — a
+            // variant whose master is served by another portfolio.
+            $portfolio->cvs()->whereNull('parent_id')->get()->each->delete();
+            $portfolio->cvs()->get()->each->delete();
         });
     }
 
